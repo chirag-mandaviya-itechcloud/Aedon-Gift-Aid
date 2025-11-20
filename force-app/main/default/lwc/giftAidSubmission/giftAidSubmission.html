@@ -1,3 +1,32 @@
 <template>
+    <lightning-card title="Gift Aid Submission">
+        <div class="slds-p-around_medium slds-grid slds-gutters">
 
+            <!-- Start Date -->
+            <div class="slds-col slds-size_2-of-12">
+                <lightning-input type="date" label="Start Date" name="startDate" value={startDate}
+                    onchange={handleDateChange}>
+                </lightning-input>
+            </div>
+
+            <!-- End Date -->
+            <div class="slds-col slds-size_2-of-12">
+                <lightning-input type="date" label="End Date" name="endDate" value={endDate}
+                    onchange={handleDateChange}>
+                </lightning-input>
+            </div>
+        </div>
+
+        <!-- Error message -->
+        <template if:true={errorMessage}>
+            <p class="slds-text-color_error slds-p-horizontal_medium">
+                {errorMessage}
+            </p>
+        </template>
+
+        <!-- <lightning-datatable key-field="id" data={SalesInvoiceTransactionData} columns={columns}
+            selected-rows={selectedRows} onrowselection={handleRowSelection}></lightning-datatable> -->
+
+
+    </lightning-card>
 </template>
