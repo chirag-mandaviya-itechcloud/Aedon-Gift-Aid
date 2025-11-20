@@ -1,2 +1,16 @@
-<apex:page >
+<apex:page showHeader="false" sidebar="false" standardController="Sales_Invoice_Transaction__c" recordSetVar="records">
+    <apex:includeLightning />
+    <div id="GiftAidComponentId"></div>
+
+    <script>
+        $Lightning.use("c:giftAidSubmissionApp", function() {
+            $Lightning.createComponent("c:giftAidSubmission", {
+                message : 'Simple Message from VF Page'
+            },
+            "GiftAidComponentId",
+            function(cmp) {
+                console.log('Calling the LWC Component');
+            });
+        });
+    </script>
 </apex:page>
