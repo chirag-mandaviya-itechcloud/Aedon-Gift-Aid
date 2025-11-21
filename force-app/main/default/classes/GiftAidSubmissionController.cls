@@ -1,19 +1,17 @@
-/**
-* @File Name : GiftAidSubmissionController.cls
-* @Description :
-* @Author :
-* @Last Modified By :
-* @Last Modified On : November 20, 2025
-* @Modification Log :
-*==============================================================================
-* Ver | Date | Author | Modification
-*==============================================================================
-* 1.0 | November 20, 2025 |   | Initial Version
-**/
-
 public class GiftAidSubmissionController {
 	@AuraEnabled
-	public static void LightningStudio(){
-		System.debug('Lightning Studio');
+	public static List<Sales_Invoice_Transaction__c> getTransactions(Datetime startDate, Datetime endDate) {
+
+		String q = 'SELECT Id, Name, CreatedDate, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submitted__c = FALSE';
+
+		if (startDate != null && endDate != null) {
+			q += ' AND CreatedDate >= :startDate AND CreatedDate <= :endDate ';
+		}
+
+		q += ' ORDER BY CreatedDate DESC';
+
+		return Database.query(q);
 	}
+
+	// AND Product__r.Gift_Aid_Eligible_Products__c = TRUE
 }

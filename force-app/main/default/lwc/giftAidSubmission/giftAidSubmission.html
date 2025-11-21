@@ -1,32 +1,50 @@
 <template>
-    <lightning-card title="Gift Aid Submission">
-        <div class="slds-p-around_medium slds-grid slds-gutters">
+    <lightning-card class="slds-p-around_medium" title="Gift Aid Submission">
+        <div class="slds-grid slds-wrap slds-gutters slds-p-around_medium">
+            <!-- Label Part -->
+            <!-- Start Date -->
+            <div class="slds-col slds-size_2-of-12">
+                <div class="slds-truncate">
+                    <legend class="slds-form-element__legend slds-form-element__label">Start Date</legend>
+                </div>
+            </div>
 
+            <!-- End Date -->
+            <div class="slds-col slds-size_2-of-12">
+                <div class="slds-truncate">
+                    <legend class="slds-form-element__legend slds-form-element__label">End Date</legend>
+                </div>
+            </div>
+
+            <div class="slds-col slds-size_8-of-12"></div>
+
+            <!-- Input Part -->
             <!-- Start Date -->
             <div class="slds-col slds-size_2-of-12">
                 <lightning-input type="date" label="Start Date" name="startDate" value={startDate}
-                    onchange={handleDateChange}>
+                    onchange={handleDateChange} variant="label-hidden">
                 </lightning-input>
             </div>
 
             <!-- End Date -->
             <div class="slds-col slds-size_2-of-12">
-                <lightning-input type="date" label="End Date" name="endDate" value={endDate}
-                    onchange={handleDateChange}>
+                <lightning-input type="date" label="End Date" name="endDate" value={endDate} onchange={handleDateChange}
+                    variant="label-hidden">
                 </lightning-input>
             </div>
+            <div class="slds-col slds-size_1-of-12">
+                <lightning-button label="Filter" onclick={handleFilter} class="slds-m-left_x-small" variant="brand">
+                </lightning-button>
+            </div>
+            <div class="slds-col slds-size_7-of-12"></div>
+
         </div>
 
-        <!-- Error message -->
-        <template if:true={errorMessage}>
-            <p class="slds-text-color_error slds-p-horizontal_medium">
-                {errorMessage}
-            </p>
-        </template>
-
-        <!-- <lightning-datatable key-field="id" data={SalesInvoiceTransactionData} columns={columns}
-            selected-rows={selectedRows} onrowselection={handleRowSelection}></lightning-datatable> -->
-
+        <div class="slds-p-around_small">
+            <lightning-datatable key-field="Id" data={salesInvoiceTransactionData} columns={columns}
+                selected-rows={selectedRows} onrowselection={handleRowSelection}
+                max-row-selection="999"></lightning-datatable>
+        </div>
 
     </lightning-card>
 </template>
