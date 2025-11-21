@@ -93,10 +93,16 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                     this.pageNumber = 1;
                     this.singlePageSalesInvoiceTransactionData = [];
                 }
+                this.clearSelection();
             })
             .catch(error => {
                 console.error('Error:', error);
             });
+    }
+
+    clearSelection() {
+        this.selectedMap.clear();
+        this.selectedRowsIds = [];
     }
 
     handleRowSelection(event) {
