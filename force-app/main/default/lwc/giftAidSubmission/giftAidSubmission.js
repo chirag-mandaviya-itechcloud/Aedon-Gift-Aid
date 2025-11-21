@@ -2,6 +2,7 @@ import { LightningElement, track } from 'lwc';
 import getTransactions from '@salesforce/apex/GiftAidSubmissionController.getTransactions';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
+import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSubmission';
 
 const columns = [
     { label: 'Name', fieldName: 'Name' },
@@ -64,12 +65,12 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
 
     handleFilter() {
         if (!this.startDate || !this.endDate) {
-            this.showToast('Warning', 'Please fill the Dates', 'warning');
+            this.showToast('Error', 'Please fill the Dates', 'error');
             return;
         }
 
         if (this.startDate > this.endDate) {
-            this.showToast('Warning', 'Start date cannot be greater than end date.', 'warning');
+            this.showToast('Error', 'Start date cannot be greater than end date.', 'error');
             return;
         }
 
@@ -155,7 +156,16 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     }
 
     handleSubmit() {
-
+        if (this.selectedRowsIds.length == 0) {
+            this.showToast('Error', 'Please select the Transaction.', 'error');
+            return;
+        }
+        console.log("Submit button hit..");
+        saveSubmission({ salesTransactionIds: this.selectedRowsIds }).then(result => {
+            console.log("result : ", result);
+        }).catch(error => {
+            console.error("Error : ", error);
+        });
     }
 
     setPageData() {
