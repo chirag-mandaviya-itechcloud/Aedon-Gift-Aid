@@ -21,6 +21,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     @track pageSize = 10;
     @track totalPages = 0;
     @track singlePageSalesInvoiceTransactionData = [];
+    selectedMap = new Map();
 
     connectedCallback() {
         this.loadTransactions();
@@ -100,19 +101,30 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
 
     handleRowSelection(event) {
         const newlySelectedRows = event.detail.selectedRows;
+        console.log
         const currentPageIds = this.singlePageSalesInvoiceTransactionData.map(row => row.Id);
 
-        this.selectedRowsIds = this.selectedRowsIds.filter(id => !currentPageIds.includes(id));
-        const newIds = newlySelectedRows.map(row => row.Id);
-        this.selectedRowsIds = [...this.selectedRowsIds, ...newIds];
+        currentPageIds.forEach(id => {
+            this.selectedMap.delete(id);
+        })
 
-        const allRows = [...this.selectedRowsData, ...newlySelectedRows];
-        const uniqueMap = new Map();
-        allRows.forEach(row => uniqueMap.set(row.Id, row));
-        this.selectedRowsData = Array.from(uniqueMap.values());
+        newlySelectedRows.forEach(row => {
+            this.selectedMap.set(row.Id, row);
+        })
+
+        this.selectedRowsIds = Array.from(this.selectedMap.keys());
+
+        // this.selectedRowsIds = this.selectedRowsIds.filter(id => !currentPageIds.includes(id));
+        // const newIds = newlySelectedRows.map(row => row.Id);
+        // this.selectedRowsIds = [...this.selectedRowsIds, ...newIds];
+
+        // const allRows = [...this.selectedRowsData, ...newlySelectedRows];
+        // const uniqueMap = new Map();
+        // allRows.forEach(row => uniqueMap.set(row.Id, row));
+        // this.selectedRowsData = Array.from(uniqueMap.values());
 
         console.log("Selected Row IDs:", this.selectedRowsIds);
-        console.log("Selected Rows Data:", this.selectedRowsData);
+        // console.log("Selected Rows Data:", this.selectedRowsData);
     }
 
     goToListView() {
@@ -144,6 +156,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         const start = (this.pageNumber - 1) * this.pageSize;
         const end = this.pageNumber * this.pageSize;
         this.singlePageSalesInvoiceTransactionData = this.salesInvoiceTransactionData.slice(start, end);
+
+        this.selectedRowsIds = Array.from(this.selectedMap.keys());
     }
 
     handleNext() {
@@ -166,6 +180,10 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
 
     get isNextDisabled() {
         return this.pageNumber >= this.totalPages;
+    }
+
+    get totalSelected() {
+        return this.selectedRowsIds.length;
     }
 
     getStartOfDay(dateString) {

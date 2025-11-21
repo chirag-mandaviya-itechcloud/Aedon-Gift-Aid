@@ -1,6 +1,6 @@
 <template>
     <lightning-card class="slds-p-around_medium" title="Gift Aid Submission">
-        <div class="slds-grid slds-wrap slds-gutters slds-p-around_medium">
+        <div class="slds-grid slds-wrap slds-gutters slds-p-horizontal_medium">
             <!-- Label Part -->
             <!-- Start Date -->
             <div class="slds-col slds-size_2-of-12">
@@ -44,6 +44,17 @@
                 </lightning-button>
                 <lightning-button class="slds-p-left_small" label="Close" onclick={handleClose} variant="brand">
                 </lightning-button>
+            </div>
+            <div class="slds-col slds-size_10-of-12 slds-p-around_small">
+                <div class="slds-text-heading_large slds-text-title_bold">
+                    Sales Invoice Transactions
+                </div>
+            </div>
+            <div class="slds-col slds-size_2-of-12 slds-text-align_right slds-p-around_small">
+                <span class="slds-p-horizontal_small"
+                    style="background-color: rgba(219, 119, 50, 0.8); border-radius: 10px">
+                    {totalSelected} Selected
+                </span>
             </div>
 
         </div>
