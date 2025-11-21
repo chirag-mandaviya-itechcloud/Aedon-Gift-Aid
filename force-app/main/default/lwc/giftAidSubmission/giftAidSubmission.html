@@ -36,14 +36,35 @@
                 <lightning-button label="Filter" onclick={handleFilter} class="slds-m-left_x-small" variant="brand">
                 </lightning-button>
             </div>
-            <div class="slds-col slds-size_7-of-12"></div>
+            <div class="slds-col slds-size_4-of-12"></div>
+            <div class="slds-col slds-size_3-of-12 slds-text-align_right">
+                <lightning-button label="Submit & Close" onclick={handleSubmitAndClose} variant="brand">
+                </lightning-button>
+                <lightning-button class="slds-p-left_small" label="Submit" onclick={handleSubmit} variant="brand">
+                </lightning-button>
+                <lightning-button class="slds-p-left_small" label="Close" onclick={handleClose} variant="brand">
+                </lightning-button>
+            </div>
 
         </div>
 
-        <div class="slds-p-around_small">
-            <lightning-datatable key-field="Id" data={salesInvoiceTransactionData} columns={columns}
-                selected-rows={selectedRows} onrowselection={handleRowSelection}
+        <div class="slds-p-around_medium">
+            <lightning-datatable key-field="Id" data={singlePageSalesInvoiceTransactionData} columns={columns}
+                selected-rows={selectedRowsIds} onrowselection={handleRowSelection}
                 max-row-selection="999"></lightning-datatable>
+        </div>
+
+        <div class="slds-p-around_medium">
+            <div class="slds-clearfix">
+                <div class="slds-float_right">
+                    <lightning-button label="Prev" title="Previous" icon-name="utility:chevronleft" onclick={handlePrev}
+                        disabled={isPrevDisabled} variant="brand"> </lightning-button>
+                    <span style="padding: 0px 5px;"> Page {pageNumber} of {totalPages} </span>
+                    <lightning-button label="Next" title="Previous" icon-name="utility:chevronright"
+                        onclick={handleNext} disabled={isNextDisabled} variant="brand" icon-position="right">
+                    </lightning-button>
+                </div>
+            </div>
         </div>
 
     </lightning-card>
