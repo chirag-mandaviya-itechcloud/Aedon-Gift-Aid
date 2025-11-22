@@ -160,9 +160,9 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
             this.showToast('Error', 'Please select the Transaction.', 'error');
             return;
         }
-        console.log("Submit button hit..");
         saveSubmission({ salesTransactionIds: this.selectedRowsIds }).then(result => {
             console.log("result : ", result);
+            this.showToast("Success", "Gift Aid Submission completed successfully.", "success");
         }).catch(error => {
             console.error("Error : ", error);
         });

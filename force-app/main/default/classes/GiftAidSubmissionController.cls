@@ -16,13 +16,31 @@ public class GiftAidSubmissionController {
 	@AuraEnabled
 	public static String saveSubmission(List<Id> salesTransactionIds){
 		try {
-			List<Sales_Invoice_Transaction__c> salesTransactions = [SELECT Id, Name, aednpc__Paid_Amount__c, aednpc__Gift_Aid_Submitted__c, aednpc__Gift_Aid_Submission__c, CreatedDate FROM aednpc__Sales_Invoice_Transaction__c WHERE Id IN :salesTransactionIds];
+			List<Sales_Invoice_Transaction__c> salesTransactions = [SELECT Id, Name, Paid_Amount__c, Gift_Aid_Submitted__c, Gift_Aid_Submission__c, CreatedDate FROM Sales_Invoice_Transaction__c WHERE Id IN :salesTransactionIds];
 			String responseXml = '';
 
 			if(!salesTransactions.isEmpty()) {
 				// Build XML Payload
             	String xmlPayload = buildXmlPayload(salesTransactions);
 				responseXml = callHMRC(xmlPayload);
+
+				String submissionId = parseXmlTag(responseXml, 'CorrelationID');
+
+				System.debug('@@@@ - ' + submissionId);
+
+				Gift_Aid_Submission__c giftAidRecord = new Gift_Aid_Submission__c();
+				giftAidRecord.Submission_Number__c = submissionId;
+				giftAidRecord.Submission_Date__c = Date.today();
+				giftAidRecord.Submitted_By__c = UserInfo.getUserId();
+
+				insert giftAidRecord;
+
+				for(Sales_Invoice_Transaction__c sit : salesTransactions) {
+					sit.Gift_Aid_Submitted__c = true;
+					sit.Gift_Aid_Submission__c = giftAidRecord.Id;
+				}
+
+				update salesTransactions;
 
 				/*
 				<?xml version="1.0" encoding="UTF-8"?>
@@ -47,7 +65,7 @@ public class GiftAidSubmissionController {
 				</GovTalkMessage>
 				*/
 			}
-			return responseXml;
+			return 'Success';
 		} catch (Exception e) {
 			throw new AuraHandledException(e.getMessage());
 		}
@@ -161,4 +179,23 @@ public class GiftAidSubmissionController {
         HttpResponse res = http.send(req);
         return res.getBody();
     }
+
+	private static String parseXmlTag(String xml, String tagName) {
+		Dom.Document doc = new Dom.Document();
+		doc.load(xml);
+		Dom.XmlNode root = doc.getRootElement();
+
+		Dom.XmlNode target = findNode(root, tagName);
+		return target != null ? target.getText() : null;
+	}
+
+	private static Dom.XmlNode findNode(Dom.XmlNode node, String tagName) {
+		if (node.getName() == tagName) return node;
+
+		for (Dom.XmlNode child : node.getChildElements()) {
+			Dom.XmlNode result = findNode(child, tagName);
+			if (result != null) return result;
+		}
+		return null;
+	}
 }
