@@ -60,6 +60,9 @@
         </div>
 
         <div class="slds-p-around_medium">
+            <template if:true={isLoading}>
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </template>
             <lightning-datatable key-field="Id" data={singlePageSalesInvoiceTransactionData} columns={columns}
                 selected-rows={selectedRowsIds} onrowselection={handleRowSelection}
                 max-row-selection="999"></lightning-datatable>

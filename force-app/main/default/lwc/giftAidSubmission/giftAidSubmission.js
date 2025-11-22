@@ -13,6 +13,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     @track startDate;
     @track endDate;
     @track errorMessage = '';
+    @track isLoading = false;
 
     columns = columns;
     @track salesInvoiceTransactionData = [];
@@ -29,6 +30,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     }
 
     loadTransactions() {
+        this.isLoading = true;
         getTransactions()
             .then(result => {
                 this.salesInvoiceTransactionData = result;
@@ -43,9 +45,11 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                     this.pageNumber = 1;
                     this.singlePageSalesInvoiceTransactionData = [];
                 }
+                this.isLoading = false;
             })
             .catch(error => {
                 console.error('Error fetching transactions: ', error);
+                this.isLoading = false;
             });
     }
 
@@ -77,6 +81,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         const startDateTime = this.getStartOfDay(this.startDate);
         const endDateTime = this.getEndOfDay(this.endDate);
 
+        this.isLoading = true;
+
         getTransactions({
             startDate: startDateTime,
             endDate: endDateTime
@@ -95,9 +101,11 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                     this.singlePageSalesInvoiceTransactionData = [];
                 }
                 this.clearSelection();
+                this.isLoading = false;
             })
             .catch(error => {
                 console.error('Error:', error);
+                this.isLoading = false;
             });
     }
 
@@ -151,21 +159,42 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         this.goToListView();
     }
 
-    handleSubmitAndClose() {
-        this.goToListView();
-    }
+    async handleSubmitAndClose() {
+        const ok = await this.handleSubmit();
 
-    handleSubmit() {
-        if (this.selectedRowsIds.length == 0) {
-            this.showToast('Error', 'Please select the Transaction.', 'error');
+        if (!ok) {
             return;
         }
-        saveSubmission({ salesTransactionIds: this.selectedRowsIds }).then(result => {
+        setTimeout(() => {
+            this.goToListView();
+        }, 1500);
+    }
+
+    async handleSubmit() {
+        if (!this.selectedRowsIds || this.selectedRowsIds.length === 0) {
+            this.showToast('Error', 'Please select the Transaction.', 'error');
+            return false;
+        }
+
+        this.isLoading = true;
+
+        try {
+            const result = await saveSubmission({ salesTransactionIds: this.selectedRowsIds });
             console.log("result : ", result);
             this.showToast("Success", "Gift Aid Submission completed successfully.", "success");
-        }).catch(error => {
+            this.isLoading = false;
+            if (this.startDate != null && this.endDate != null) {
+                this.handleFilter();
+            } else {
+                this.loadTransactions();
+            }
+            this.clearSelection();
+            return true;
+        } catch (error) {
             console.error("Error : ", error);
-        });
+            this.isLoading = false;
+            return false;
+        }
     }
 
     setPageData() {
