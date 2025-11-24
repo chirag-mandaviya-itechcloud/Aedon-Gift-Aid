@@ -5,9 +5,19 @@ import { NavigationMixin } from 'lightning/navigation';
 import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSubmission';
 
 const columns = [
+    { label: 'Sales Header', fieldName: 'salesInvoiceHeaderName' },
     { label: 'Name', fieldName: 'Name' },
-    { label: 'Created Date', fieldName: 'CreatedDate', type: 'date' },
-    { label: 'Paid Amount', fieldName: 'aednpc__Paid_Amount__c' }
+    { label: 'Company', fieldName: 'companyName' },
+    { label: 'Invoice Date', fieldName: 'invoiceDate', type: 'date' },
+    { label: 'Account Name', fieldName: 'accountName' },
+    { label: 'Customer Reference', fieldName: 'aednpc__Customer_Reference__c' },
+    { label: 'Product Name', fieldName: 'productName' },
+    { label: 'Nominal Code', fieldName: 'nominalCode' },
+    { label: 'Sales VAT', fieldName: 'salesVAT' },
+    { label: 'Analysis 1', fieldName: 'analysis1' },
+    { label: 'Analysis 2', fieldName: 'analysis2' },
+    // { label: 'Created Date', fieldName: 'CreatedDate', type: 'date' },
+    { label: 'Paid Amount', fieldName: 'aednpc__Paid_Amount__c' },
 ]
 export default class GiftAidSubmission extends NavigationMixin(LightningElement) {
     @track startDate;
@@ -33,8 +43,19 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         this.isLoading = true;
         getTransactions()
             .then(result => {
-                this.salesInvoiceTransactionData = result;
                 console.log('Transactions fetched: ', result);
+                this.salesInvoiceTransactionData = result.map(rec => ({
+                    ...rec,
+                    salesInvoiceHeaderName: rec.aednpc__Sales_Invoice_Header__r?.Name,
+                    companyName: rec.aednpc__Company__r?.Name,
+                    invoiceDate: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
+                    accountName: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
+                    productName: rec.aednpc__Product__r?.Name,
+                    nominalCode: rec.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
+                    salesVAT: rec.aednpc__Sale_VAT__r?.Name,
+                    analysis1: rec.aednpc__Analysis_1__r?.Name,
+                    analysis2: rec.aednpc__Analysis_2__r?.Name
+                }));
 
                 if (this.salesInvoiceTransactionData.length > 0) {
                     this.totalPages = Math.ceil(this.salesInvoiceTransactionData.length / this.pageSize);
@@ -78,18 +99,29 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
             return;
         }
 
-        const startDateTime = this.getStartOfDay(this.startDate);
-        const endDateTime = this.getEndOfDay(this.endDate);
+        // const startDateTime = this.getStartOfDay(this.startDate);
+        // const endDateTime = this.getEndOfDay(this.endDate);
 
         this.isLoading = true;
 
         getTransactions({
-            startDate: startDateTime,
-            endDate: endDateTime
+            startDate: this.startDate,
+            endDate: this.endDate
         })
             .then(result => {
-                this.salesInvoiceTransactionData = result;
                 console.log('Filtered transactions: ', result);
+                this.salesInvoiceTransactionData = result.map(rec => ({
+                    ...rec,
+                    salesInvoiceHeaderName: rec.aednpc__Sales_Invoice_Header__r?.Name,
+                    companyName: rec.aednpc__Company__r?.Name,
+                    invoiceDate: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
+                    accountName: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
+                    productName: rec.aednpc__Product__r?.Name,
+                    nominalCode: rec.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
+                    salesVAT: rec.aednpc__Sale_VAT__r?.Name,
+                    analysis1: rec.aednpc__Analysis_1__r?.Name,
+                    analysis2: rec.aednpc__Analysis_2__r?.Name
+                }));
 
                 if (this.salesInvoiceTransactionData.length > 0) {
                     this.totalPages = Math.ceil(this.salesInvoiceTransactionData.length / this.pageSize);

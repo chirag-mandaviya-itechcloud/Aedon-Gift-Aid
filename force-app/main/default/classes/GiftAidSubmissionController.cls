@@ -1,15 +1,14 @@
 public class GiftAidSubmissionController {
 
     @AuraEnabled
-	public static List<Sales_Invoice_Transaction__c> getTransactions(Datetime startDate, Datetime endDate) {
-
-		String q = 'SELECT Id, Name, CreatedDate, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submitted__c = FALSE AND Product__r.Gift_Aid_Eligible_Products__c = TRUE';
+	public static List<Sales_Invoice_Transaction__c> getTransactions(Date startDate, Date endDate) {
+        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submitted__c = FALSE AND Product__r.Gift_Aid_Eligible_Products__c = TRUE';
 
 		if (startDate != null && endDate != null) {
-			q += ' AND CreatedDate >= :startDate AND CreatedDate <= :endDate ';
+			q += ' AND Sales_Invoice_Header__r.Invoice_Date__c >= :startDate AND Sales_Invoice_Header__r.Invoice_Date__c <= :endDate ';
 		}
 
-		q += ' ORDER BY CreatedDate DESC';
+		q += ' ORDER BY Sales_Invoice_Header__r.Invoice_Date__c DESC';
 
 		return Database.query(q);
 	}
