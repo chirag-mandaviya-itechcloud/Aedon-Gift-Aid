@@ -141,6 +141,12 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
             });
     }
 
+    handleClearFilter() {
+        this.startDate = '';
+        this.endDate = '';
+        this.loadTransactions();
+    }
+
     clearSelection() {
         this.selectedMap.clear();
         this.selectedRowsIds = [];
