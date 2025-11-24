@@ -20,8 +20,8 @@ const columns = [
     { label: 'Paid Amount', fieldName: 'aednpc__Paid_Amount__c' },
 ]
 export default class GiftAidSubmission extends NavigationMixin(LightningElement) {
-    @track startDate;
-    @track endDate;
+    @track startDate = null;
+    @track endDate = null;
     @track errorMessage = '';
     @track isLoading = false;
 
@@ -142,8 +142,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     }
 
     handleClearFilter() {
-        this.startDate = '';
-        this.endDate = '';
+        this.startDate = null;
+        this.endDate = null;
         this.loadTransactions();
     }
 

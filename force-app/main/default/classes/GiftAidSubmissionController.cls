@@ -2,7 +2,16 @@ public class GiftAidSubmissionController {
 
     @AuraEnabled
 	public static List<Sales_Invoice_Transaction__c> getTransactions(Date startDate, Date endDate) {
-        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submitted__c = FALSE AND Product__r.Gift_Aid_Eligible_Products__c = TRUE';
+
+        List<Contact> donorContacts = [SELECT AccountId FROM Contact WHERE IsDonor__c = TRUE];
+
+        List<Id> donorAccIds = new List<Id>();
+
+        for (Contact con : donorContacts) {
+            donorAccIds.add(con.AccountId);
+        }
+
+        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submitted__c = FALSE AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
 
 		if (startDate != null && endDate != null) {
 			q += ' AND Sales_Invoice_Header__r.Invoice_Date__c >= :startDate AND Sales_Invoice_Header__r.Invoice_Date__c <= :endDate ';
@@ -16,7 +25,7 @@ public class GiftAidSubmissionController {
 	@AuraEnabled
 	public static String saveSubmission(List<Id> salesTransactionIds){
         try {
-			List<Sales_Invoice_Transaction__c> salesTransactions = [SELECT Id, Name, Paid_Amount__c, Gift_Aid_Submitted__c, Gift_Aid_Submission__c, CreatedDate FROM Sales_Invoice_Transaction__c WHERE Id IN :salesTransactionIds];
+			List<Sales_Invoice_Transaction__c> salesTransactions = [SELECT Id, Name, Paid_Amount__c, Gift_Aid_Submitted__c, Gift_Aid_Submission__c, CreatedDate, Sales_Invoice_Header__r.Account__r.Id FROM Sales_Invoice_Transaction__c WHERE Id IN :salesTransactionIds];
             String responseXml = '';
 
             Map<String, String> configData = new Map<String, String>();
@@ -40,8 +49,21 @@ public class GiftAidSubmissionController {
 
 
 			if(!salesTransactions.isEmpty()) {
+                List<Id> selectedDonorAccIds = new List<Id>();
+                Map<Id, Contact> accToConMap = new Map<Id, Contact>();
+
+                for (Sales_Invoice_Transaction__c t : salesTransactions) {
+                    selectedDonorAccIds.add(t.Sales_Invoice_Header__r.Account__r.Id);
+                }
+
+                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingAddress FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE];
+
+                for (Contact con : donorContacts) {
+                    accToConMap.put(con.AccountId, con);
+                }
+
 				// Build XML Payload
-            	String xmlPayload = buildXmlPayloadString(salesTransactions,configData);
+            	String xmlPayload = buildXmlPayloadString(salesTransactions,configData, accToConMap);
 
                 String updateXml = HMRCIRmarkGenerator.processCharitySubmission(xmlPayload);
 
@@ -72,7 +94,7 @@ public class GiftAidSubmissionController {
 		}
 	}
 
-    private static String buildXmlPayloadString(List<Sales_Invoice_Transaction__c> txns,Map<String,String> configData) {
+    private static String buildXmlPayloadString(List<Sales_Invoice_Transaction__c> txns,Map<String,String> configData, Map<Id, Contact> accToConMap) {
         String xml =
             '<?xml version="1.0" encoding="UTF-8"?>' +
             '<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">' +
@@ -149,20 +171,22 @@ public class GiftAidSubmissionController {
         // GAD Entries
         for (Sales_Invoice_Transaction__c t : txns) {
 
+            Contact txnConDetails = accToConMap.get(t.Sales_Invoice_Header__r.Account__r.Id);
+            if (txnConDetails != null) {
+                xml += '<GAD>' +
+                    '<Donor>' +
+                    '<Fore>'+txnConDetails.FirstName+'</Fore>' +
+                    '<Sur>'+txnConDetails.LastName+'</Sur>' +
+                    '<House>55</House>' +
+                    '<Postcode>AB23 4CD</Postcode>' +
+                    '</Donor>' +
+                    '<Date>'+t.CreatedDate.formatGMT('yyyy-MM-dd')+'</Date>' +
+                    '<Total>'+String.valueOf(t.Paid_Amount__c)+'</Total>' +
+                    '</GAD>';
 
-            xml += '<GAD>' +
-                '<Donor>' +
-                '<Fore>James</Fore>' +
-                '<Sur>Bacon</Sur>' +
-                '<House>55</House>' +
-                '<Postcode>AB23 4CD</Postcode>' +
-                '</Donor>' +
-                '<Date>'+t.CreatedDate.formatGMT('yyyy-MM-dd')+'</Date>' +
-                '<Total>'+String.valueOf(t.Paid_Amount__c)+'</Total>' +
-                '</GAD>';
-
-            if(EarliestGAdate > t.CreatedDate) {
-                EarliestGAdate = t.CreatedDate;
+                if(EarliestGAdate > t.CreatedDate) {
+                    EarliestGAdate = t.CreatedDate;
+                }
             }
         }
 
