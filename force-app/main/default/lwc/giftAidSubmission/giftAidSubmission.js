@@ -16,6 +16,8 @@ const columns = [
     { label: 'Sales VAT', fieldName: 'salesVAT' },
     { label: 'Analysis 1', fieldName: 'analysis1' },
     { label: 'Analysis 2', fieldName: 'analysis2' },
+    { label: 'Analysis 6', fieldName: 'analysis6' },
+    { label: 'Analysis 7', fieldName: 'analysis7' },
     // { label: 'Created Date', fieldName: 'CreatedDate', type: 'date' },
     { label: 'Paid Amount', fieldName: 'paid_amount__c' },
 ]
@@ -55,6 +57,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                     salesVAT: record.aednpc__Sale_VAT__r?.Name,
                     analysis1: record.aednpc__Analysis_1__r?.Name,
                     analysis2: record.aednpc__Analysis_2__r?.Name,
+                    analysis6: record.aednpc__Analysis_6__r?.Name,
+                    analysis7: record.aednpc__Analysis_7__r?.Name,
                     paid_amount__c: Number(record.aednpc__Paid_Amount__c).toFixed(2)
                 }));
 
@@ -122,6 +126,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                     salesVAT: record.aednpc__Sale_VAT__r?.Name,
                     analysis1: record.aednpc__Analysis_1__r?.Name,
                     analysis2: record.aednpc__Analysis_2__r?.Name,
+                    analysis6: record.aednpc__Analysis_6__r?.Name,
+                    analysis7: record.aednpc__Analysis_7__r?.Name,
                     paid_amount__c: Number(record.aednpc__Paid_Amount__c).toFixed(2)
                 }));
 
