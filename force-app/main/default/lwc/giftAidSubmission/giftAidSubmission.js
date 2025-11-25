@@ -6,11 +6,11 @@ import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSub
 
 const columns = [
     { label: 'Sales Header', fieldName: 'salesInvoiceHeaderName' },
-    { label: 'Name', fieldName: 'Name' },
+    { label: 'Name', fieldName: 'name' },
     { label: 'Company', fieldName: 'companyName' },
     { label: 'Invoice Date', fieldName: 'invoiceDate', type: 'date' },
     { label: 'Account Name', fieldName: 'accountName' },
-    { label: 'Customer Reference', fieldName: 'aednpc__Customer_Reference__c' },
+    { label: 'Customer Reference', fieldName: 'customerReference' },
     { label: 'Product Name', fieldName: 'productName' },
     { label: 'Nominal Code', fieldName: 'nominalCode' },
     { label: 'Sales VAT', fieldName: 'salesVAT' },
@@ -18,8 +18,11 @@ const columns = [
     { label: 'Analysis 2', fieldName: 'analysis2' },
     { label: 'Analysis 6', fieldName: 'analysis6' },
     { label: 'Analysis 7', fieldName: 'analysis7' },
+    { label: 'First Name', fieldName: 'contactFirstName' },
+    { label: 'Last Name', fieldName: 'contactLastName' },
+    { label: 'Postal Code', fieldName: 'contactPostalCode' },
     // { label: 'Created Date', fieldName: 'CreatedDate', type: 'date' },
-    { label: 'Paid Amount', fieldName: 'paid_amount__c' },
+    { label: 'Paid Amount', fieldName: 'paidAmount' },
 ]
 export default class GiftAidSubmission extends NavigationMixin(LightningElement) {
     @track startDate = null;
@@ -48,18 +51,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                 console.log('Transactions fetched: ', result);
                 this.salesInvoiceTransactionData = result.map(record => ({
                     ...record,
-                    salesInvoiceHeaderName: record.aednpc__Sales_Invoice_Header__r?.Name,
-                    companyName: record.aednpc__Company__r?.Name,
-                    invoiceDate: record.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
-                    accountName: record.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
-                    productName: record.aednpc__Product__r?.Name,
-                    nominalCode: record.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
-                    salesVAT: record.aednpc__Sale_VAT__r?.Name,
-                    analysis1: record.aednpc__Analysis_1__r?.Name,
-                    analysis2: record.aednpc__Analysis_2__r?.Name,
-                    analysis6: record.aednpc__Analysis_6__r?.Name,
-                    analysis7: record.aednpc__Analysis_7__r?.Name,
-                    paid_amount__c: Number(record.aednpc__Paid_Amount__c).toFixed(2)
+                    paidAmount: Number(record.paidAmount).toFixed(2)
                 }));
 
                 if (this.salesInvoiceTransactionData.length > 0) {
@@ -117,18 +109,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                 console.log('Filtered transactions: ', result);
                 this.salesInvoiceTransactionData = result.map(record => ({
                     ...record,
-                    salesInvoiceHeaderName: record.aednpc__Sales_Invoice_Header__r?.Name,
-                    companyName: record.aednpc__Company__r?.Name,
-                    invoiceDate: record.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
-                    accountName: record.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
-                    productName: record.aednpc__Product__r?.Name,
-                    nominalCode: record.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
-                    salesVAT: record.aednpc__Sale_VAT__r?.Name,
-                    analysis1: record.aednpc__Analysis_1__r?.Name,
-                    analysis2: record.aednpc__Analysis_2__r?.Name,
-                    analysis6: record.aednpc__Analysis_6__r?.Name,
-                    analysis7: record.aednpc__Analysis_7__r?.Name,
-                    paid_amount__c: Number(record.aednpc__Paid_Amount__c).toFixed(2)
+                    paidAmount: Number(record.paidAmount).toFixed(2)
                 }));
 
                 if (this.salesInvoiceTransactionData.length > 0) {

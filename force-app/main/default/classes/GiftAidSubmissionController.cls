@@ -1,7 +1,7 @@
 public class GiftAidSubmissionController {
 
     @AuraEnabled
-	public static List<Sales_Invoice_Transaction__c> getTransactions(Date startDate, Date endDate) {
+	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate) {
 
         List<Contact> donorContacts = [SELECT AccountId FROM Contact WHERE IsDonor__c = TRUE];
 
@@ -13,7 +13,7 @@ public class GiftAidSubmissionController {
 
         String nonSubmittedStatus = 'Non-Submitted';
 
-        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c = :nonSubmittedStatus AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
+        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c = :nonSubmittedStatus AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
 
 		if (startDate != null && endDate != null) {
 			q += ' AND Sales_Invoice_Header__r.Invoice_Date__c >= :startDate AND Sales_Invoice_Header__r.Invoice_Date__c <= :endDate ';
@@ -21,7 +21,49 @@ public class GiftAidSubmissionController {
 
 		q += ' ORDER BY Sales_Invoice_Header__r.Invoice_Date__c DESC';
 
-		return Database.query(q);
+        List<Sales_Invoice_Transaction__c> transactions = Database.query(q);
+
+		List<GiftAidSubmissionResultWrapper> response = new List<GiftAidSubmissionResultWrapper>();
+
+        List<Id> accIds = new List<Id>();
+        Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
+
+        for (Sales_Invoice_Transaction__c txn : transactions) {
+            accIds.add(txn.Sales_Invoice_Header__r.Account__r.Id);
+        }
+
+        List<Contact> contacts = [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND AccountId IN :accIds];
+
+        for (Contact con : contacts) {
+            accIdToConMap.put(con.AccountId, con);
+        }
+
+        for (Sales_Invoice_Transaction__c txn : transactions) {
+            GiftAidSubmissionResultWrapper wrapper = new GiftAidSubmissionResultWrapper();
+
+            wrapper.Id = txn.Id;
+            wrapper.salesInvoiceHeaderName = txn.Sales_Invoice_Header__r.Name;
+            wrapper.name = txn.Name;
+            wrapper.companyName = txn.Company__r.Name;
+            wrapper.invoiceDate = txn.Sales_Invoice_Header__r.Invoice_Date__c;
+            wrapper.accountName = txn.Sales_Invoice_Header__r.Account__r.Name;
+            wrapper.customerReference = txn.Customer_Reference__c;
+            wrapper.productName = txn.Product__r.Name;
+            wrapper.nominalCode = txn.Nominal_Code2__r.Nominal_Code__c;
+            wrapper.salesVAT = txn.Sale_VAT__r.Name;
+            wrapper.analysis1 = txn.Analysis_1__r.Name;
+            wrapper.analysis2 = txn.Analysis_2__r.Name;
+            wrapper.analysis6 = txn.Analysis_6__r.Name;
+            wrapper.analysis7 = txn.Analysis_7__r.Name;
+            wrapper.paidAmount = txn.Paid_Amount__c;
+            wrapper.contactFirstName = accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).FirstName;
+            wrapper.contactLastName = accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).LastName;
+            wrapper.contactPostalCode = accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).MailingPostalCode ?? '';
+
+            response.add(wrapper);
+        }
+
+        return response;
 	}
 
 	@AuraEnabled
@@ -380,5 +422,26 @@ public class GiftAidSubmissionController {
             }
         }
         return companyObj;
+    }
+
+    public class GiftAidSubmissionResultWrapper {
+        @AuraEnabled public Id Id;
+        @AuraEnabled public String salesInvoiceHeaderName;
+        @AuraEnabled public String name;
+        @AuraEnabled public String companyName;
+        @AuraEnabled public Date invoiceDate;
+        @AuraEnabled public String accountName;
+        @AuraEnabled public String customerReference;
+        @AuraEnabled public String productName;
+        @AuraEnabled public Decimal nominalCode;
+        @AuraEnabled public String salesVAT;
+        @AuraEnabled public String analysis1;
+        @AuraEnabled public String analysis2;
+        @AuraEnabled public String analysis6;
+        @AuraEnabled public String analysis7;
+        @AuraEnabled public Decimal paidAmount;
+        @AuraEnabled public String contactFirstName;
+        @AuraEnabled public String contactLastName;
+        @AuraEnabled public String contactPostalCode;
     }
 }
