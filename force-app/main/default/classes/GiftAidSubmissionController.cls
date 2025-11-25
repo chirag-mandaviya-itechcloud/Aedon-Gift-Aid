@@ -3,16 +3,16 @@ public class GiftAidSubmissionController {
     @AuraEnabled
 	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate) {
 
-        List<Contact> donorContacts = [SELECT AccountId FROM Contact WHERE IsDonor__c = TRUE];
+        Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
 
-        List<Id> donorAccIds = new List<Id>();
-
-        for (Contact con : donorContacts) {
-            donorAccIds.add(con.AccountId);
+        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE]) {
+            if (con.AccountId != null) {
+                accIdToConMap.put(con.AccountId, con);
+            }
         }
 
+        Set<Id> donorAccIds = accIdToConMap.keySet();
         String nonSubmittedStatus = 'Non-Submitted';
-
         String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c = :nonSubmittedStatus AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
 
 		if (startDate != null && endDate != null) {
@@ -24,19 +24,6 @@ public class GiftAidSubmissionController {
         List<Sales_Invoice_Transaction__c> transactions = Database.query(q);
 
 		List<GiftAidSubmissionResultWrapper> response = new List<GiftAidSubmissionResultWrapper>();
-
-        List<Id> accIds = new List<Id>();
-        Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
-
-        for (Sales_Invoice_Transaction__c txn : transactions) {
-            accIds.add(txn.Sales_Invoice_Header__r.Account__r.Id);
-        }
-
-        List<Contact> contacts = [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND AccountId IN :accIds];
-
-        for (Contact con : contacts) {
-            accIdToConMap.put(con.AccountId, con);
-        }
 
         for (Sales_Invoice_Transaction__c txn : transactions) {
             GiftAidSubmissionResultWrapper wrapper = new GiftAidSubmissionResultWrapper();
