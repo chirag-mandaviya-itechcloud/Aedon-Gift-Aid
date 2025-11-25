@@ -17,7 +17,7 @@ const columns = [
     { label: 'Analysis 1', fieldName: 'analysis1' },
     { label: 'Analysis 2', fieldName: 'analysis2' },
     // { label: 'Created Date', fieldName: 'CreatedDate', type: 'date' },
-    { label: 'Paid Amount', fieldName: 'aednpc__Paid_Amount__c' },
+    { label: 'Paid Amount', fieldName: 'paid_amount__c' },
 ]
 export default class GiftAidSubmission extends NavigationMixin(LightningElement) {
     @track startDate = null;
@@ -44,17 +44,18 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         getTransactions()
             .then(result => {
                 console.log('Transactions fetched: ', result);
-                this.salesInvoiceTransactionData = result.map(rec => ({
-                    ...rec,
-                    salesInvoiceHeaderName: rec.aednpc__Sales_Invoice_Header__r?.Name,
-                    companyName: rec.aednpc__Company__r?.Name,
-                    invoiceDate: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
-                    accountName: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
-                    productName: rec.aednpc__Product__r?.Name,
-                    nominalCode: rec.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
-                    salesVAT: rec.aednpc__Sale_VAT__r?.Name,
-                    analysis1: rec.aednpc__Analysis_1__r?.Name,
-                    analysis2: rec.aednpc__Analysis_2__r?.Name
+                this.salesInvoiceTransactionData = result.map(record => ({
+                    ...record,
+                    salesInvoiceHeaderName: record.aednpc__Sales_Invoice_Header__r?.Name,
+                    companyName: record.aednpc__Company__r?.Name,
+                    invoiceDate: record.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
+                    accountName: record.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
+                    productName: record.aednpc__Product__r?.Name,
+                    nominalCode: record.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
+                    salesVAT: record.aednpc__Sale_VAT__r?.Name,
+                    analysis1: record.aednpc__Analysis_1__r?.Name,
+                    analysis2: record.aednpc__Analysis_2__r?.Name,
+                    paid_amount__c: Number(record.aednpc__Paid_Amount__c).toFixed(2)
                 }));
 
                 if (this.salesInvoiceTransactionData.length > 0) {
@@ -110,17 +111,18 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         })
             .then(result => {
                 console.log('Filtered transactions: ', result);
-                this.salesInvoiceTransactionData = result.map(rec => ({
-                    ...rec,
-                    salesInvoiceHeaderName: rec.aednpc__Sales_Invoice_Header__r?.Name,
-                    companyName: rec.aednpc__Company__r?.Name,
-                    invoiceDate: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
-                    accountName: rec.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
-                    productName: rec.aednpc__Product__r?.Name,
-                    nominalCode: rec.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
-                    salesVAT: rec.aednpc__Sale_VAT__r?.Name,
-                    analysis1: rec.aednpc__Analysis_1__r?.Name,
-                    analysis2: rec.aednpc__Analysis_2__r?.Name
+                this.salesInvoiceTransactionData = result.map(record => ({
+                    ...record,
+                    salesInvoiceHeaderName: record.aednpc__Sales_Invoice_Header__r?.Name,
+                    companyName: record.aednpc__Company__r?.Name,
+                    invoiceDate: record.aednpc__Sales_Invoice_Header__r?.aednpc__Invoice_Date__c,
+                    accountName: record.aednpc__Sales_Invoice_Header__r?.aednpc__Account__r?.Name,
+                    productName: record.aednpc__Product__r?.Name,
+                    nominalCode: record.aednpc__Nominal_Code2__r?.aednpc__Nominal_Code__c,
+                    salesVAT: record.aednpc__Sale_VAT__r?.Name,
+                    analysis1: record.aednpc__Analysis_1__r?.Name,
+                    analysis2: record.aednpc__Analysis_2__r?.Name,
+                    paid_amount__c: Number(record.aednpc__Paid_Amount__c).toFixed(2)
                 }));
 
                 if (this.salesInvoiceTransactionData.length > 0) {
