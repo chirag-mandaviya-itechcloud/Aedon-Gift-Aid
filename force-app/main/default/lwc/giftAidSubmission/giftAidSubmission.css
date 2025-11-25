@@ -28,3 +28,8 @@
 .slds-checkbox input:checked + .slds-checkbox_faux:after {
     background: #0176D3 !important; /* Salesforce blue */
 }
+
+.table-container {
+    overflow-x: auto;
+    white-space: nowrap;
+}
