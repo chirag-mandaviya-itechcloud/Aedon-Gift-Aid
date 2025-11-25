@@ -28,25 +28,29 @@ public class GiftAidSubmissionController {
 			List<Sales_Invoice_Transaction__c> salesTransactions = [SELECT Id, Name, Paid_Amount__c, Gift_Aid_Submitted__c, Gift_Aid_Submission__c, CreatedDate, Sales_Invoice_Header__r.Account__r.Id FROM Sales_Invoice_Transaction__c WHERE Id IN :salesTransactionIds];
             String responseXml = '';
 
+            GiftAidSubmission__c gas = GiftAidSubmission__c.getInstance();
+            Company__c com= getCompanyInformation();
+
             Map<String, String> configData = new Map<String, String>();
-            configData.put('senderId', '323412300001');
-            configData.put('charityId', 'AB12345');
-            configData.put('pass', 'testing1');
-            configData.put('RegName', 'CCEW');
-            configData.put('RegNo', 'A1234');
-            configData.put('OrgName', 'My Organisation');
+            configData.put('senderId', gas.aednpc__senderId__c);
+            configData.put('charityId', gas.aednpc__charityId__c);
+            configData.put('pass', gas.aednpc__pass__c);
+            configData.put('RegName', com.Name);
+            configData.put('RegNo', com.Registered_Charity_Number__c);
+            configData.put('OrgName', com.Name);
 
-            configData.put('Channel_URI', '0000');
-            configData.put('Channel_Product', 'Aedon Gift Aid');
-            configData.put('Channel_Version', '1.0');
+            configData.put('Channel_URI', gas.aednpc__Channel_URI__c);
+            configData.put('Channel_Product', gas.aednpc__Channel_Product__c);
+            configData.put('Channel_Version', gas.aednpc__Channel_Version__c);
 
-            configData.put('AuthOfficial_Fore', 'John');
-            configData.put('AuthOfficial_Sur', 'Smith');
-            configData.put('AuthOfficial_Postcode', 'AB12 3CD');
-            configData.put('AuthOfficial_Phone', '01234 567890');
+            configData.put('AuthOfficial_Fore', com.Name);
+            configData.put('AuthOfficial_Sur', com.Name);
+            configData.put('AuthOfficial_Postcode', com.Company_PostalCode__c);
+            configData.put('AuthOfficial_Phone', com.Telephone__c);
 
             configData.put('isTest', 'true');
 
+            System.debug('configData: '+ configData);
 
 			if(!salesTransactions.isEmpty()) {
                 List<Id> selectedDonorAccIds = new List<Id>();
@@ -56,7 +60,7 @@ public class GiftAidSubmissionController {
                     selectedDonorAccIds.add(t.Sales_Invoice_Header__r.Account__r.Id);
                 }
 
-                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingAddress FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE];
+                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingStreet FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE];
 
                 for (Contact con : donorContacts) {
                     accToConMap.put(con.AccountId, con);
@@ -177,8 +181,8 @@ public class GiftAidSubmissionController {
                     '<Donor>' +
                     '<Fore>'+txnConDetails.FirstName+'</Fore>' +
                     '<Sur>'+txnConDetails.LastName+'</Sur>' +
-                    '<House>55</House>' +
-                    '<Postcode>AB23 4CD</Postcode>' +
+                    '<House>'+txnConDetails.MailingStreet+'</House>' +
+                    '<Postcode>'+txnConDetails.MailingPostalCode+'</Postcode>' +
                     '</Donor>' +
                     '<Date>'+t.CreatedDate.formatGMT('yyyy-MM-dd')+'</Date>' +
                     '<Total>'+String.valueOf(t.Paid_Amount__c)+'</Total>' +
@@ -364,4 +368,15 @@ public class GiftAidSubmissionController {
 		}
 		return null;
 	}
+
+    private static Company__c getCompanyInformation(){
+        Company__c companyObj = new Company__c();
+        List<User> usersList = [SELECT ID, Name, Current_Logged_In_Company__c FROM User WHERE Id = :UserInfo.getUserId() WITH SECURITY_ENFORCED];
+        if(usersList.size() > 0){
+            if(usersList[0].Current_Logged_In_Company__c != null){
+            	companyObj = [SELECT Name, Registered_Charity_Number__c, Company_PostalCode__c, Telephone__c  FROM Company__c where Id =: usersList[0].Current_Logged_In_Company__c WITH SECURITY_ENFORCED];
+            }
+        }
+        return companyObj;
+    }
 }
