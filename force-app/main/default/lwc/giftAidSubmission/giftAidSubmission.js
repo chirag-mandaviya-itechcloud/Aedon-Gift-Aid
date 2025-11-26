@@ -141,6 +141,13 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         this.selectedRowsIds = [];
     }
 
+    resetFilters() {
+        this.startDate = null;
+        this.endDate = null;
+        this.clearSelection();
+        this.loadTransactions();
+    }
+
     handleRowSelection(event) {
         const newlySelectedRows = event.detail.selectedRows;
         console.log
@@ -183,7 +190,10 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     }
 
     handleClose() {
-        this.goToListView();
+        this.resetFilters();
+        setTimeout(() => {
+            this.goToListView();
+        }, 100);
     }
 
     async handleSubmitAndClose() {
@@ -192,6 +202,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         if (!ok) {
             return;
         }
+        this.resetFilters();
         setTimeout(() => {
             this.goToListView();
         }, 1500);
