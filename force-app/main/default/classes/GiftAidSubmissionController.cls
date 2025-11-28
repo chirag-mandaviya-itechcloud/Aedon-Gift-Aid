@@ -5,7 +5,7 @@ public class GiftAidSubmissionController {
 
         Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
 
-        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND Gift_Aid_Validity_Date__c > TODAY AND aednpc__Donor_Role__c = 'Gift Aid giver']) {
+        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND Eligible_for_Gift_Aid__c = TRUE AND Gift_Aid_Declaration_Date__c < TODAY AND Gift_Aid_Expiry_Date__c > TODAY AND Donor_Role__c = 'Gift Aid giver']) {
             if (con.AccountId != null) {
                 accIdToConMap.put(con.AccountId, con);
             }
@@ -91,7 +91,7 @@ public class GiftAidSubmissionController {
                     selectedDonorAccIds.add(t.Sales_Invoice_Header__r.Account__r.Id);
                 }
 
-                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingStreet FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE AND Gift_Aid_Validity_Date__c > TODAY ];
+                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingStreet FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE AND Eligible_for_Gift_Aid__c = TRUE AND Gift_Aid_Declaration_Date__c < TODAY AND Gift_Aid_Expiry_Date__c > TODAY];
 
                 for (Contact con : donorContacts) {
                     accToConMap.put(con.AccountId, con);

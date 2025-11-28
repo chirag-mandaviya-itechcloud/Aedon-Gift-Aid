@@ -5,15 +5,15 @@ import { NavigationMixin } from 'lightning/navigation';
 import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSubmission';
 
 const columns = [
+    { label: 'Invoice Date', fieldName: 'invoiceDate', type: 'date', initialWidth: 150 },
+    { label: 'Customer Reference', fieldName: 'customerReference', initialWidth: 150 },
     { label: 'Sales Header', fieldName: 'salesInvoiceHeaderName', initialWidth: 150 },
     // { label: 'Name', fieldName: 'name', initialWidth: 150 },
     { label: 'Company', fieldName: 'companyName', initialWidth: 150 },
-    { label: 'Invoice Date', fieldName: 'invoiceDate', type: 'date', initialWidth: 150 },
     { label: 'Account Name', fieldName: 'accountName', initialWidth: 150 },
     { label: 'First Name', fieldName: 'contactFirstName', initialWidth: 150 },
     { label: 'Last Name', fieldName: 'contactLastName', initialWidth: 150 },
     { label: 'Postal Code', fieldName: 'contactPostalCode', initialWidth: 150 },
-    { label: 'Customer Reference', fieldName: 'customerReference', initialWidth: 150 },
     { label: 'Product Name', fieldName: 'productName', initialWidth: 150 },
     { label: 'Nominal Code', fieldName: 'nominalCode', initialWidth: 150 },
     { label: 'Sales VAT', fieldName: 'salesVAT', initialWidth: 150 },
@@ -21,7 +21,7 @@ const columns = [
     { label: 'Analysis 1', fieldName: 'analysis1', initialWidth: 150 },
     { label: 'Analysis 2', fieldName: 'analysis2', initialWidth: 150 },
     { label: 'Analysis 6', fieldName: 'analysis6', initialWidth: 150 },
-    { label: 'Analysis 7', fieldName: 'analysis7', initialWidth: 150 },
+    // { label: 'Analysis 7', fieldName: 'analysis7', initialWidth: 150 },
 ]
 export default class GiftAidSubmission extends NavigationMixin(LightningElement) {
     @track startDate = null;
