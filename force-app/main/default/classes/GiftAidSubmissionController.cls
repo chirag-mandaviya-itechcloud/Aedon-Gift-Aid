@@ -5,7 +5,7 @@ public class GiftAidSubmissionController {
 
         Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
 
-        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE]) {
+        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND Gift_Aid_Validity_Date__c > TODAY AND aednpc__Donor_Role__c = 'Gift Aid giver']) {
             if (con.AccountId != null) {
                 accIdToConMap.put(con.AccountId, con);
             }
@@ -91,7 +91,7 @@ public class GiftAidSubmissionController {
                     selectedDonorAccIds.add(t.Sales_Invoice_Header__r.Account__r.Id);
                 }
 
-                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingStreet FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE];
+                List<Contact> donorContacts = [SELECT Id, AccountId, FirstName, LastName, MailingPostalCode, MailingStreet FROM Contact WHERE AccountId IN :selectedDonorAccIds AND IsDonor__c = TRUE AND Gift_Aid_Validity_Date__c > TODAY ];
 
                 for (Contact con : donorContacts) {
                     accToConMap.put(con.AccountId, con);
@@ -103,7 +103,7 @@ public class GiftAidSubmissionController {
                 String updateXml = HMRCIRmarkGenerator.processCharitySubmission(xmlPayload);
 
 				System.debug('updateXml: ' + updateXml);
-				responseXml = callHMRC(updateXml);
+				responseXml = callHMRC(updateXml, gas.aednpc__endpoint__c);
                 System.debug('responseXml: ' + responseXml);
 
 				String submissionId = parseXmlTag(responseXml, 'CorrelationID');
@@ -355,11 +355,11 @@ public class GiftAidSubmissionController {
         return doc.toXmlString();
 	}*/
 
-    private static String callHMRC(String xmlPayload) {
+    private static String callHMRC(String xmlPayload, String endpoint) {
 
         Http http = new Http();
         HttpRequest req = new HttpRequest();
-        req.setEndpoint('https://test-transaction-engine.tax.service.gov.uk/submission');
+        req.setEndpoint(endpoint);
         req.setMethod('POST');
         req.setHeader('Content-Type', 'text/xml');
         req.setBody(xmlPayload);
