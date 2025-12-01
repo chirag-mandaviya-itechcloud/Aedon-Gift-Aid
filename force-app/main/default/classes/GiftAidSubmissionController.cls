@@ -103,7 +103,7 @@ public class GiftAidSubmissionController {
                 String updateXml = HMRCIRmarkGenerator.processCharitySubmission(xmlPayload);
 
 				System.debug('updateXml: ' + updateXml);
-				responseXml = callHMRC(updateXml, gas.aednpc__endpoint__c);
+				responseXml = callHMRC(updateXml, gas.endpoint__c);
                 System.debug('responseXml: ' + responseXml);
 
 				String submissionId = parseXmlTag(responseXml, 'CorrelationID');
