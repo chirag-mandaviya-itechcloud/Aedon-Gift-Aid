@@ -16,6 +16,7 @@ public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, 
 			for (Gift_Aid_Submission__c gas : submissionRecords) {
 				String responseBody = callPollingAPI(gas.Submission_Number__c, endpoint);
 				gas.Polling_Response__c = responseBody;
+
 				String qualifier = parseXmlTag(responseBody, 'Qualifier');
 				String function = parseXmlTag(responseBody, 'Function');
 
