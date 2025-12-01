@@ -17,25 +17,19 @@ public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, 
 				String responseBody = callPollingAPI(gas.Submission_Number__c, endpoint);
 				gas.Polling_Response__c = responseBody;
 
-				String correlationId = parseXmlTag(responseBody, 'CorrelationID');
+				String qualifier = parseXmlTag(responseBody, 'Qualifier');
+				String function = parseXmlTag(responseBody, 'Function');
 
-				if (correlationId == gas.Submission_Number__c) {
-					String qualifier = parseXmlTag(responseBody, 'Qualifier');
-					String function = parseXmlTag(responseBody, 'Function');
+				if (qualifier == 'error' && function == 'submit') {
+					String errorRaisedBy = parseXmlTag(responseBody, 'RaisedBy');
+					String errorNumber = parseXmlTag(responseBody, 'Number');
+					String errorType = parseXmlTag(responseBody, 'Type');
+					String errorText = parseXmlTag(responseBody, 'Text');
 
-					if (qualifier == 'error' && function == 'submit') {
-						String errorRaisedBy = parseXmlTag(responseBody, 'RaisedBy');
-						String errorNumber = parseXmlTag(responseBody, 'Number');
-						String errorType = parseXmlTag(responseBody, 'Type');
-						String errorText = parseXmlTag(responseBody, 'Text');
-
-						gas.Polling_Error_Description__c = errorRaisedBy + '-' + errorNumber + '-' + errorType + '-' + errorType;
-						gas.Gift_Aid_Polling_Status__c = 'Error';
-
-						//update gas error description field here.
-					} else if (qualifier == 'response' && function == 'submit') {
-						gas.Gift_Aid_Polling_Status__c = 'Success';
-					}
+					gas.Polling_Error_Description__c = errorRaisedBy + ' - ' + errorNumber + ' - ' + errorType + ' - ' + errorText;
+					gas.Gift_Aid_Polling_Status__c = 'Error';
+				} else if (qualifier == 'response' && function == 'submit') {
+					gas.Gift_Aid_Polling_Status__c = 'Success';
 				}
 			}
 
@@ -59,6 +53,36 @@ public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, 
 			'</Header>' +
 			'</MessageDetails>' +
 			'<GovTalkDetails><Keys/></GovTalkDetails>' +
+			'</GovTalkMessage>';
+
+		Http http = new Http();
+		HttpRequest req = new HttpRequest();
+		req.setEndpoint(endpoint);
+		req.setMethod('POST');
+		req.setHeader('Content-Type', 'text/xml');
+		req.setBody(requestBodyXml);
+
+		HttpResponse res = http.send(req);
+		return res.getBody();
+	}
+
+	private String callDeleteAPI(String submissionNumber, string endpoint) {
+		String requestBodyXml =
+			'<?xml version="1.0" encoding="UTF-8"?>' +
+			'<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">' +
+			'<EnvelopeVersion>2.0</EnvelopeVersion>' +
+			'<Header>' +
+			'<MessageDetails>' +
+			'<Class>HMRC-SA-SA100</Class>' +
+			'<Qualifier>request</Qualifier>' +
+			'<Function>delete</Function>' +
+			'<CorrelationID>' + submissionNumber + '</CorrelationID>' +
+			'<Transformation>XML</Transformation>' +
+			'</MessageDetails>' +
+			'</Header>' +
+			'</MessageDetails>' +
+			'<GovTalkDetails><Keys/></GovTalkDetails>' +
+			'<Body/>' +
 			'</GovTalkMessage>';
 
 		Http http = new Http();
