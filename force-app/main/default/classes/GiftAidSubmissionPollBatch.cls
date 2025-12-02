@@ -1,39 +1,67 @@
 public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, Database.AllowsCallouts {
 	public Database.QueryLocator start(Database.BatchableContext BC) {
-		return Database.getQueryLocator([SELECT Id, Submission_Number__c, Polling_Response__c, Gift_Aid_Polling_Status__c, Polling_Error_Description__c FROM Gift_Aid_Submission__c WHERE Gift_Aid_Polling_Status__c != 'Success']);
+		return Database.getQueryLocator([SELECT Id, Submission_Number__c, Polling_Response__c, Gift_Aid_Polling_Status__c, Polling_Error_Description__c, (SELECT Id, Gift_Aid_Submission_Status__c FROM Sales_Invoice_Transactions__r) FROM Gift_Aid_Submission__c WHERE Gift_Aid_Polling_Status__c != 'Success' AND Gift_Aid_Polling_Status__c != 'Error']);
 	}
 
 	public void execute(Database.BatchableContext BC, List<SObject> scope) {
 		List<Gift_Aid_Submission__c> submissionRecords = new List<Gift_Aid_Submission__c>();
+		List<Sales_Invoice_Transaction__c> sitRecords = new List<Sales_Invoice_Transaction__c>();
+
 		if (scope.size() > 0) {
 			submissionRecords = (List<Gift_Aid_Submission__c>)scope;
 		}
 
 		if (!submissionRecords.isEmpty()) {
 			GiftAidSubmission__c gasConstant = GiftAidSubmission__c.getInstance();
-			String endpoint = gasConstant.endpoint__c;
+			String submissionEndpoint = gasConstant.endpoint__c;
+			String pollingEndpoint = gasConstant.polling_endpoint__c;
 
 			for (Gift_Aid_Submission__c gas : submissionRecords) {
-				String responseBody = callPollingAPI(gas.Submission_Number__c, endpoint);
+				String responseBody = callPollingAPI(gas.Submission_Number__c, pollingEndpoint);
 				gas.Polling_Response__c = responseBody;
 
-				String qualifier = parseXmlTag(responseBody, 'Qualifier');
-				String function = parseXmlTag(responseBody, 'Function');
+				String correlationId = parseXmlTag(responseBody, 'CorrelationID');
 
-				if (qualifier == 'error' && function == 'submit') {
-					String errorRaisedBy = parseXmlTag(responseBody, 'RaisedBy');
-					String errorNumber = parseXmlTag(responseBody, 'Number');
-					String errorType = parseXmlTag(responseBody, 'Type');
-					String errorText = parseXmlTag(responseBody, 'Text');
+				if (correlationId == gas.Submission_Number__c) {
 
-					gas.Polling_Error_Description__c = errorRaisedBy + ' - ' + errorNumber + ' - ' + errorType + ' - ' + errorText;
-					gas.Gift_Aid_Polling_Status__c = 'Error';
-				} else if (qualifier == 'response' && function == 'submit') {
-					gas.Gift_Aid_Polling_Status__c = 'Success';
+					String qualifier = parseXmlTag(responseBody, 'Qualifier');
+					String function = parseXmlTag(responseBody, 'Function');
+
+					if (qualifier == 'error' && function == 'submit') {
+						String errorRaisedBy = parseXmlTag(responseBody, 'RaisedBy');
+						String errorNumber = parseXmlTag(responseBody, 'Number');
+						String errorType = parseXmlTag(responseBody, 'Type');
+						String errorText = parseXmlTag(responseBody, 'Text');
+
+						gas.Polling_Error_Description__c = errorRaisedBy + ' - ' + errorNumber + ' - ' + errorType + ' - ' + errorText;
+						gas.Gift_Aid_Polling_Status__c = 'Error';
+						String deleteResponse = callDeleteAPI(gas.Submission_Number__c, submissionEndpoint);
+
+						if (gas.Sales_Invoice_Transactions__r.size() > 0) {
+							for (Sales_Invoice_Transaction__c sit : gas.Sales_Invoice_Transactions__r) {
+								sit.Gift_Aid_Submission_Status__c = 'Rejected';
+								sitRecords.add(sit);
+							}
+						}
+					} else if (qualifier == 'response' && function == 'submit') {
+						gas.Polling_Error_Description__c = '';
+						gas.Gift_Aid_Polling_Status__c = 'Success';
+						String deleteResponse = callDeleteAPI(gas.Submission_Number__c, submissionEndpoint);
+
+						if (gas.Sales_Invoice_Transactions__r.size() > 0) {
+							for (Sales_Invoice_Transaction__c sit : gas.Sales_Invoice_Transactions__r) {
+								sit.Gift_Aid_Submission_Status__c = 'Accepted';
+								sitRecords.add(sit);
+							}
+						}
+					} else if (qualifier == 'acknowledgement' && function == 'submit') {
+						gas.Gift_Aid_Polling_Status__c = 'In Progress';
+					}
 				}
 			}
 
 			update submissionRecords;
+			update sitRecords;
 		}
 	}
 
@@ -44,14 +72,13 @@ public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, 
 			'<EnvelopeVersion>2.0</EnvelopeVersion>' +
 			'<Header>' +
 			'<MessageDetails>' +
-			'<Class>HMRC-SA-SA100</Class>' +
+			'<Class>HMRC-CHAR-CLM</Class>' +
 			'<Qualifier>poll</Qualifier>' +
 			'<Function>submit</Function>' +
 			'<CorrelationID>' + submissionNumber + '</CorrelationID>' +
 			'<Transformation>XML</Transformation>' +
 			'</MessageDetails>' +
 			'</Header>' +
-			'</MessageDetails>' +
 			'<GovTalkDetails><Keys/></GovTalkDetails>' +
 			'</GovTalkMessage>';
 
@@ -73,14 +100,13 @@ public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, 
 			'<EnvelopeVersion>2.0</EnvelopeVersion>' +
 			'<Header>' +
 			'<MessageDetails>' +
-			'<Class>HMRC-SA-SA100</Class>' +
+			'<Class>HMRC-CHAR-CLM</Class>' +
 			'<Qualifier>request</Qualifier>' +
 			'<Function>delete</Function>' +
 			'<CorrelationID>' + submissionNumber + '</CorrelationID>' +
 			'<Transformation>XML</Transformation>' +
 			'</MessageDetails>' +
 			'</Header>' +
-			'</MessageDetails>' +
 			'<GovTalkDetails><Keys/></GovTalkDetails>' +
 			'<Body/>' +
 			'</GovTalkMessage>';
