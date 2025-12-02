@@ -108,7 +108,6 @@ public class GiftAidSubmissionPollBatch implements Database.Batchable<SObject>, 
 			'</MessageDetails>' +
 			'</Header>' +
 			'<GovTalkDetails><Keys/></GovTalkDetails>' +
-			'<Body/>' +
 			'</GovTalkMessage>';
 
 		Http http = new Http();
