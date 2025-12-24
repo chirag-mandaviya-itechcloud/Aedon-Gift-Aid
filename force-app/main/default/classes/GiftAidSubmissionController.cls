@@ -1,6 +1,28 @@
+/**
+ * GiftAidSubmissionController
+ *
+ * Author: Abhishek D
+ * Created Date: 2025-11-22
+ * Last Modified By: Abhishek D
+ * Last Modified Date: 2025-12-18
+ *
+ * Description:
+ *  Controller for Gift Aid submission LWC and backend processing.
+ *  - Provides methods to fetch eligible Sales Invoice Transactions,
+ *    build and submit HMRC XML payloads, and helper utilities.
+ */
 public class GiftAidSubmissionController {
 
-    @AuraEnabled
+    /**
+     * getTransactions
+     * Purpose: Return a list of Sales Invoice Transaction wrappers for the UI.
+     * Params:
+     *  - Date startDate: optional filter start date (inclusive)
+     *  - Date endDate: optional filter end date (inclusive)
+     * Returns: List<GiftAidSubmissionResultWrapper> - formatted records for LWC consumption
+     * Notes: Filters transactions by donor eligibility and product eligibility.
+     */
+	@AuraEnabled
 	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate) {
 
         Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
@@ -13,7 +35,6 @@ public class GiftAidSubmissionController {
 
         Set<Id> donorAccIds = accIdToConMap.keySet();
         List<String> allowedStatus = new List<String>{'Non-Submitted', 'Rejected'};
-        // String nonSubmittedStatus = 'Non-Submitted';
         String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c IN :allowedStatus AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
 
 		if (startDate != null && endDate != null) {
@@ -54,6 +75,15 @@ public class GiftAidSubmissionController {
         return response;
 	}
 
+    /**
+     * saveSubmission
+     * Purpose: Create a Gift_Aid_Submission__c record, build HMRC XML payload and send to HMRC endpoint.
+     * Params:
+     *  - List<Id> salesTransactionIds: ids of Sales_Invoice_Transaction__c to submit
+     * Returns: String - 'Success' on success or throws AuraHandledException on failure
+     * Behavior:
+     *  - Gathers company and donor contact data, builds payload, calls HMRC and updates SIT statuses.
+     */
 	@AuraEnabled
 	public static String saveSubmission(List<Id> salesTransactionIds){
         try {
@@ -131,6 +161,15 @@ public class GiftAidSubmissionController {
 		}
 	}
 
+    /**
+     * buildXmlPayloadString
+     * Purpose: Build the HMRC GovTalk XML payload string for the provided transactions.
+     * Params:
+     *  - List<Sales_Invoice_Transaction__c> txns: transactions to include
+     *  - Map<String,String> configData: configuration values (charity id, sender id, etc.)
+     *  - Map<Id, Contact> accToConMap: mapping of Account Id -> Contact (donor details)
+     * Returns: String - XML payload ready for signing/processing
+     */
     private static String buildXmlPayloadString(List<Sales_Invoice_Transaction__c> txns,Map<String,String> configData, Map<Id, Contact> accToConMap) {
         String xml =
             '<?xml version="1.0" encoding="UTF-8"?>' +
@@ -144,7 +183,6 @@ public class GiftAidSubmissionController {
             '<CorrelationID/>' +
             '<Transformation>XML</Transformation>' +
             '<GatewayTest>1</GatewayTest>'+
-            //<GatewayTimestamp>'+Datetime.now().formatGMT('yyyy-MM-dd\'T\'HH:mm:ss.SSS')+'</GatewayTimestamp>
             '</MessageDetails>' +
             '<SenderDetails>' +
             '<IDAuthentication>' +
@@ -237,125 +275,6 @@ public class GiftAidSubmissionController {
             '</GovTalkMessage>';
         return  xml;
     }
-	/*private static String buildXmlPayload(List<Sales_Invoice_Transaction__c> txns) {
-		Dom.Document doc = new Dom.Document();
-		Dom.XmlNode root = doc.createRootElement('GovTalkMessage', null, null);
-		root.setAttribute('xmlns', 'http://www.govtalk.gov.uk/CM/envelope');
-		root.addChildElement('EnvelopeVersion', null, null).addTextNode('2.0');
-
-		// Header element
-		Dom.XmlNode header = root.addChildElement('Header', null, null);
-		Dom.XmlNode msgDetails = header.addChildElement('MessageDetails', null, null);
-		msgDetails.addChildElement('Class', null, null).addTextNode('HMRC-CHAR-CLM');
-		msgDetails.addChildElement('Qualifier', null, null).addTextNode('request');
-		msgDetails.addChildElement('Function', null, null).addTextNode('submit');
-		msgDetails.addChildElement('CorrelationID', null, null);
-        msgDetails.addChildElement('Transformation', null, null).addTextNode('XML');
-		msgDetails.addChildElement('GatewayTest', null, null).addTextNode('1');
-        msgDetails.addChildElement('GatewayTimestamp', null, null).addTextNode(Datetime.now().formatGMT('yyyy-MM-dd\'T\'HH:mm:ss.SSS'));
-
-		// SenderDetails element
-		Dom.XmlNode senderDetails = header.addChildElement('SenderDetails', null, null);
-		Dom.XmlNode idAuth = senderDetails.addChildElement('IDAuthentication', null, null);
-		idAuth.addChildElement('SenderID', null, null).addTextNode('323412300001');
-
-		Dom.XmlNode auth = idAuth.addChildElement('Authentication', null, null);
-		auth.addChildElement('Method', null, null).addTextNode('clear');
-        auth.addChildElement('Role', null, null).addTextNode('principal');
-        auth.addChildElement('Value', null, null).addTextNode('testing1');
-
-		// GovTalkDetails
-		Dom.XmlNode govTalkDetails = root.addChildElement('GovTalkDetails', null, null);
-		Dom.XmlNode keys = govTalkDetails.addChildElement('Keys', null, null);
-		Dom.XmlNode key = keys.addChildElement('Key', null, null);
-		key.setAttribute('Type', 'CHARID');
-		key.addTextNode('AB12345');
-
-		// Body
-		Dom.XmlNode body = root.addChildElement('Body', null, null);
-		Dom.XmlNode irEnvelope = body.addChildElement(
-            'IRenvelope', null, null
-        );
-		irEnvelope.setAttribute('xmlns', 'http://www.govtalk.gov.uk/taxation/charities/r68/2');
-
-		Dom.XmlNode irHeader = irEnvelope.addChildElement('IRheader', null, null);
-		Dom.XmlNode irKeys = irHeader.addChildElement('Keys', null, null);
-		Dom.XmlNode irKey = irKeys.addChildElement('Key', null, null);
-		irKey.setAttribute('Type', 'CHARID');
-		irKey.addTextNode('AB12345');
-		irHeader.addChildElement('PeriodEnd', null, null).addTextNode(Datetime.now().formatGMT('yyyy-MM-dd'));
-        irHeader.addChildElement('DefaultCurrency', null, null).addTextNode('GBP');
-		Dom.XmlNode irMark = irHeader.addChildElement('IRmark', null, null);
-		irMark.setAttribute('Type', 'generic');
-		irMark.addTextNode('PLACEHOLDER');
-        irHeader.addChildElement('Sender', null, null).addTextNode('Company');
-
-		//irHeader.addChildElement('GatewayTimestamp', null, null);
-
-		// R68 Claim Section
-        Dom.XmlNode r68 = irEnvelope.addChildElement(
-            'R68',
-            null,
-            null
-        );
-
-        Dom.XmlNode authOfficial = r68.addChildElement('AuthOfficial', null, null);
-        Dom.XmlNode OffName = authOfficial.addChildElement('OffName', null, null);
-        OffName.addChildElement('Fore', null, null).addTextNode('John');
-        OffName.addChildElement('Sur', null, null).addTextNode('Smith');
-
-        Dom.XmlNode OffID = authOfficial.addChildElement('OffID', null, null);
-        OffID.addChildElement('Postcode', null, null).addTextNode('AB12 3CD');
-
-        authOfficial.addChildElement('Phone', null, null).addTextNode('01234 567890');
-
-        r68.addChildElement('Declaration', null, null).addTextNode('yes');
-
-		Dom.XmlNode claim = r68.addChildElement('Claim', null, null);
-        claim.addChildElement('OrgName', null, null).addTextNode('My Organisation');
-		claim.addChildElement('HMRCref', null, null).addTextNode('AB12345');
-
-        Dom.XmlNode Regulator = claim.addChildElement('Regulator', null, null);
-        Regulator.addChildElement('RegName', null, null).addTextNode('CCEW');
-		Regulator.addChildElement('RegNo', null, null).addTextNode('A1234');
-
-		Dom.XmlNode repayment = claim.addChildElement('Repayment', null, null);
-        //repayment.addChildElement('NumberOfDonations', null, null)
-       //          .addTextNode(String.valueOf(txns.size()));
-
-		//Decimal total = 0;
-       // for (Sales_Invoice_Transaction__c t : txns) {
-       //     total += t.Paid_Amount__c;
-       // }
-       // repayment.addChildElement('TotalDonationAmount', null, null)
-       //          .addTextNode(String.valueOf(total));
-		///
-        DateTime EarliestGAdate = DateTime.now();
-		// GAD Entries
-        for (Sales_Invoice_Transaction__c t : txns) {
-			Dom.XmlNode gad = repayment.addChildElement('GAD', null, null);
-
-            Dom.XmlNode donor = gad.addChildElement('Donor', null, null);
-            //donor.addChildElement('Ttl', null, null).addTextNode('');
-            donor.addChildElement('Fore', null, null).addTextNode('Jane');
-            donor.addChildElement('Sur', null, null).addTextNode('Smith');
-            donor.addChildElement('House', null, null).addTextNode('1');
-            donor.addChildElement('Postcode', null, null).addTextNode('BA23 9CD');
-
-            gad.addChildElement('Date', null, null)
-               .addTextNode(t.CreatedDate.formatGMT('yyyy-MM-dd'));
-
-            gad.addChildElement('Total', null, null)
-               .addTextNode(String.valueOf(t.Paid_Amount__c));
-
-            if(EarliestGAdate > t.CreatedDate) {
-                EarliestGAdate = t.CreatedDate;
-            }
-		}
-        repayment.addChildElement('EarliestGAdate', null, null).addTextNode(EarliestGAdate.formatGMT('yyyy-MM-dd'));
-
-        return doc.toXmlString();
-	}*/
 
     private static String callHMRC(String xmlPayload, String endpoint) {
 
@@ -370,6 +289,14 @@ public class GiftAidSubmissionController {
         return res.getBody();
     }
 
+	/**
+	 * parseXmlTag
+	 * Purpose: Extract text value between <tagName>...</tagName> from a raw XML string.
+	 * Params:
+	 *  - String xml: raw XML response
+	 *  - String tagName: tag to extract
+	 * Returns: String - extracted value or null if not found
+	 */
 	private static String parseXmlTag(String xml, String tagName) {
         // Tag names
         String startTag = '<'+tagName+'>';
@@ -384,14 +311,16 @@ public class GiftAidSubmissionController {
             ? xml.substring(startPos + startTag.length(), endPos)
             : null;
 		return correlationId;
-		/*Dom.Document doc = new Dom.Document();
-		doc.load(xml);
-		Dom.XmlNode root = doc.getRootElement();
-
-		Dom.XmlNode target = findNode(root, tagName);
-		return target != null ? target.getText() : null;*/
 	}
 
+	/**
+	 * findNode
+	 * Purpose: Recursive helper to find a Dom.XmlNode with the specified tagName.
+	 * Params:
+	 *  - Dom.XmlNode node: current node to search
+	 *  - String tagName: name of node to find
+	 * Returns: Dom.XmlNode or null
+	 */
 	private static Dom.XmlNode findNode(Dom.XmlNode node, String tagName) {
 		if (node.getName() == tagName) return node;
 
@@ -402,6 +331,12 @@ public class GiftAidSubmissionController {
 		return null;
 	}
 
+    /**
+     * getCompanyInformation
+     * Purpose: Retrieve the Company__c associated with the current user's Current_Logged_In_Company__c.
+     * Returns: Company__c (empty instance if not found)
+     * Notes: Uses WITH SECURITY_ENFORCED to honor field-level and object-level security.
+     */
     private static Company__c getCompanyInformation(){
         Company__c companyObj = new Company__c();
         List<User> usersList = [SELECT ID, Name, Current_Logged_In_Company__c FROM User WHERE Id = :UserInfo.getUserId() WITH SECURITY_ENFORCED];
@@ -413,6 +348,10 @@ public class GiftAidSubmissionController {
         return companyObj;
     }
 
+    /**
+     * GiftAidSubmissionResultWrapper
+     * Purpose: Wrapper DTO returned to LWC with sanitized and formatted transaction fields.
+     */
     public class GiftAidSubmissionResultWrapper {
         @AuraEnabled public Id Id;
         @AuraEnabled public String salesInvoiceHeaderName;
