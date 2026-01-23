@@ -21,6 +21,7 @@
 
 import { LightningElement, track } from 'lwc';
 import getTransactions from '@salesforce/apex/GiftAidSubmissionController.getTransactions';
+import getProductFilterOptions from '@salesforce/apex/GiftAidSubmissionController.getProductFilterOptions';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSubmission';
@@ -58,12 +59,38 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     @track singlePageSalesInvoiceTransactionData = [];
     selectedMap = new Map();
 
+    @track productOptions = [];
+    @track giftAidStatusOptions = [];
+    @track companyOptions = [];
+    @track selectedProduct = '';
+    @track selectedGiftAidStatus = '';
+    @track selectedCompany = '';
+
     /**
      * Lifecycle hook invoked when component is inserted into DOM.
      * Purpose: initialize component data by loading transactions.
      */
     connectedCallback() {
         this.loadTransactions();
+        this.loadProductOptions();
+    }
+
+    loadProductOptions() {
+        this.isLoading = true;
+        getProductFilterOptions()
+            .then(result => {
+                console.log('Product Filter Options: ', result);
+                this.productOptions = result.map(item => ({
+                    label: item.Name,
+                    value: item.Id
+                }));
+                this.isLoading = false;
+                console.log('Mapped Product Options: ', this.productOptions);
+            })
+            .catch(error => {
+                console.error('Error fetching product options: ', error);
+                this.isLoading = false;
+            });
     }
 
     /**
@@ -116,17 +143,33 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         console.log(`Date changed - ${fieldName}: ${fieldValue}`);
     }
 
+    handleComboboxChange(event) {
+        const fieldName = event.target.name;
+        const fieldValue = event.detail.value;
+
+        if (fieldName === 'productFilter') {
+            this.selectedProduct = fieldValue;
+        } else if (fieldName === 'giftAidStatusFilter') {
+            this.selectedGiftAidStatus = fieldValue;
+        } else if (fieldName === 'companyFilter') {
+            this.selectedCompany = fieldValue;
+        }
+
+        console.log(`Filter changed - ${fieldName}: ${fieldValue}`);
+    }
+
     /**
      * Apply date filter and reload transactions from Apex.
      * Purpose: validate dates, call getTransactions with date range, reset selection and update pagination.
      */
     handleFilter() {
-        if (!this.startDate || !this.endDate) {
-            this.showToast('Error', 'Please fill the Dates', 'error');
+        console.log("selectedProduct: ", this.selectedProduct);
+        if (!this.startDate && !this.endDate && !this.selectedProduct) {
+            this.showToast('Error', 'Please fill any filter', 'error');
             return;
         }
 
-        if (this.startDate > this.endDate) {
+        if (this.startDate && this.endDate && this.startDate > this.endDate) {
             this.showToast('Error', 'Start date cannot be greater than end date.', 'error');
             return;
         }
@@ -135,7 +178,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
 
         getTransactions({
             startDate: this.startDate,
-            endDate: this.endDate
+            endDate: this.endDate,
+            productId: this.selectedProduct
         })
             .then(result => {
                 console.log('Filtered transactions: ', result);
@@ -168,6 +212,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     handleClearFilter() {
         this.startDate = null;
         this.endDate = null;
+        this.selectedProduct = '';
         this.loadTransactions();
     }
 

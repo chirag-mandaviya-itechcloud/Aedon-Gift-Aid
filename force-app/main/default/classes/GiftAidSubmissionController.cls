@@ -23,7 +23,7 @@ public class GiftAidSubmissionController {
      * Notes: Filters transactions by donor eligibility and product eligibility.
      */
 	@AuraEnabled
-	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate) {
+	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate, String productId) {
 
         Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
 
@@ -35,10 +35,18 @@ public class GiftAidSubmissionController {
 
         Set<Id> donorAccIds = accIdToConMap.keySet();
         List<String> allowedStatus = new List<String>{'Non-Submitted', 'Rejected'};
-        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c IN :allowedStatus AND Sales_Invoice_Header__r.aednpc__Posting_Status__c!=\'Draft\' AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
+        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Product__r.Gift_Aid_Eligible_Products__c = TRUE';
 
-		if (startDate != null && endDate != null) {
-			q += ' AND Sales_Invoice_Header__r.Invoice_Date__c >= :startDate AND Sales_Invoice_Header__r.Invoice_Date__c <= :endDate ';
+		if (startDate != null) {
+			q += ' AND Sales_Invoice_Header__r.Invoice_Date__c >= :startDate ';
+		}
+
+        if (endDate != null) {
+            q += ' AND Sales_Invoice_Header__r.Invoice_Date__c <= :endDate ';
+        }
+
+		if (productId != null && productId != '') {
+			q += ' AND Product__r.Id = :productId ';
 		}
 
 		q += ' ORDER BY Sales_Invoice_Header__r.Invoice_Date__c DESC';
@@ -65,15 +73,20 @@ public class GiftAidSubmissionController {
             wrapper.analysis6 = txn.Analysis_6__r.Name;
             wrapper.analysis7 = txn.Analysis_7__r.Name;
             wrapper.paidAmount = txn.Paid_Amount__c;
-            wrapper.contactFirstName = accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).FirstName;
-            wrapper.contactLastName = accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).LastName;
-            wrapper.contactPostalCode = accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).MailingPostalCode ?? '';
+            wrapper.contactFirstName = accIdToConMap.containsKey(txn.Sales_Invoice_Header__r.Account__r.Id) ? accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).FirstName : '';
+            wrapper.contactLastName = accIdToConMap.containsKey(txn.Sales_Invoice_Header__r.Account__r.Id) ? accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).LastName : '';
+            wrapper.contactPostalCode = accIdToConMap.containsKey(txn.Sales_Invoice_Header__r.Account__r.Id) ? accIdToConMap.get(txn.Sales_Invoice_Header__r.Account__r.Id).MailingPostalCode : '';
 
             response.add(wrapper);
         }
 
         return response;
 	}
+
+    @AuraEnabled
+    public static List<Product2> getProductFilterOptions() {
+        return [SELECT Id, Gift_Aid_Eligible_Products__c, Name FROM Product2 WHERE Gift_Aid_Eligible_Products__c = TRUE];
+    }
 
     /**
      * saveSubmission

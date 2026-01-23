@@ -16,7 +16,14 @@
                 </div>
             </div>
 
-            <div class="slds-col slds-size_8-of-12"></div>
+            <!-- Product Filter -->
+            <div class="slds-col slds-size_2-of-12">
+                <div class="slds-truncate">
+                    <legend class="slds-form-element__legend slds-form-element__label">Product</legend>
+                </div>
+            </div>
+
+            <div class="slds-col slds-size_6-of-12"></div>
 
             <!-- Input Part -->
             <!-- Start Date -->
@@ -32,6 +39,16 @@
                     variant="label-hidden">
                 </lightning-input>
             </div>
+
+            <!-- Product Filter -->
+            <div class="slds-col slds-size_2-of-12">
+                <lightning-combobox name="productFilter" label="Product" value={selectedProduct}
+                    placeholder="Select Product" options={productOptions} onchange={handleComboboxChange}
+                    variant="label-hidden">
+                </lightning-combobox>
+            </div>
+
+
             <div class="slds-col slds-size_2-of-12 slds-text-align_left">
                 <lightning-button label="Filter" onclick={handleFilter} class="slds-m-left_x-small" variant="brand">
                 </lightning-button>
@@ -40,7 +57,7 @@
                 </lightning-button>
             </div>
 
-            <div class="slds-col slds-size_3-of-12"></div>
+            <div class="slds-col slds-size_1-of-12"></div>
             <div class="slds-col slds-size_3-of-12 slds-text-align_right">
                 <lightning-button label="Submit & Close" onclick={handleSubmitAndClose} variant="brand">
                 </lightning-button>
