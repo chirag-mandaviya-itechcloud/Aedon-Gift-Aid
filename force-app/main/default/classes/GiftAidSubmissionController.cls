@@ -27,7 +27,7 @@ public class GiftAidSubmissionController {
 
         Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
 
-        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND Eligible_for_Gift_Aid__c = TRUE AND Gift_Aid_Declaration_Date__c < TODAY AND Gift_Aid_Expiry_Date__c > TODAY AND Donor_Role__c = 'Gift Aid giver']) {
+        for (Contact con : [SELECT Id, FirstName,  LastName, MailingPostalCode, AccountId FROM Contact WHERE IsDonor__c = TRUE AND Eligible_for_Gift_Aid__c = TRUE AND Gift_Aid_Declaration_Date__c < TODAY AND Gift_Aid_Expiry_Date__c > TODAY AND Donor_Role__c = 'Gift Aid Donor']) {
             if (con.AccountId != null) {
                 accIdToConMap.put(con.AccountId, con);
             }
@@ -35,7 +35,7 @@ public class GiftAidSubmissionController {
 
         Set<Id> donorAccIds = accIdToConMap.keySet();
         List<String> allowedStatus = new List<String>{'Non-Submitted', 'Rejected'};
-        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c IN :allowedStatus AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
+        String q = 'SELECT Id, Sales_Invoice_Header__r.Name, Name, Company__r.Name, Sales_Invoice_Header__r.Invoice_Date__c, Sales_Invoice_Header__r.Account__r.Id, Sales_Invoice_Header__r.Account__r.Name, Customer_Reference__c, Product__r.Name, Nominal_Code2__r.Nominal_Code__c, Sale_VAT__r.Name, Analysis_1__r.Name, Analysis_2__r.Name, Analysis_6__r.Name, Analysis_7__r.Name, Paid_Amount__c FROM Sales_Invoice_Transaction__c WHERE Gift_Aid_Submission_Status__c IN :allowedStatus AND Sales_Invoice_Header__r.aednpc__Posting_Status__c!=\'Draft\' AND Product__r.Gift_Aid_Eligible_Products__c = TRUE AND Sales_Invoice_Header__r.Account__r.Id IN :donorAccIds';
 
 		if (startDate != null && endDate != null) {
 			q += ' AND Sales_Invoice_Header__r.Invoice_Date__c >= :startDate AND Sales_Invoice_Header__r.Invoice_Date__c <= :endDate ';
