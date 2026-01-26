@@ -2,6 +2,10 @@
 	color : black;
 }
 
+.slds-text-heading_large{
+    font-size: larger !important;
+}
+
 .root {
 	margin: 0px;
 }

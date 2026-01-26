@@ -22,6 +22,8 @@
 import { LightningElement, track } from 'lwc';
 import getTransactions from '@salesforce/apex/GiftAidSubmissionController.getTransactions';
 import getProductFilterOptions from '@salesforce/apex/GiftAidSubmissionController.getProductFilterOptions';
+import getGiftAidStatusOptions from '@salesforce/apex/GiftAidSubmissionController.getGiftAidStatusOptions';
+import getCompanyFilterOptions from '@salesforce/apex/GiftAidSubmissionController.getCompanyFilterOptions';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSubmission';
@@ -61,7 +63,7 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
 
     @track productOptions = [];
     @track giftAidStatusOptions = [];
-    @track companyOptions = [];
+    @track companyOptions = []; 
     @track selectedProduct = '';
     @track selectedGiftAidStatus = '';
     @track selectedCompany = '';
@@ -73,6 +75,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     connectedCallback() {
         this.loadTransactions();
         this.loadProductOptions();
+        this.loadGiftAidStatusOptions();
+        this.loadCompanyOptions();
     }
 
     loadProductOptions() {
@@ -91,6 +95,48 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                 console.error('Error fetching product options: ', error);
                 this.isLoading = false;
             });
+    }
+
+    loadGiftAidStatusOptions() {
+        getGiftAidStatusOptions()
+            .then(result => {
+                console.log('Gift Aid Status Options: ', result);
+                this.giftAidStatusOptions = [
+                    { label: '--None--', value: '' },
+                    ...result.map(item => ({
+                        label: item.label,
+                        value: item.value
+                    }))
+                ];
+                console.log('Mapped Gift Aid Status Options: ', this.giftAidStatusOptions);
+            })
+            .catch(error => {
+                console.error('Error fetching gift aid status options: ', error);
+                this.showToast('Error', 'Failed to load status options', 'error');
+            });
+    }
+
+    loadCompanyOptions() {
+        getCompanyFilterOptions()
+            .then(result => {
+                console.log('Company Filter Options: ', result);
+                this.companyOptions = [
+                    { label: '--None--', value: '' },
+                    ...result.map(item => ({
+                        label: item.Name,
+                        value: item.Id
+                    }))
+                ];
+                console.log('Mapped Company Options: ', this.companyOptions);
+            })
+            .catch(error => {
+                console.error('Error fetching company options: ', error);
+                this.showToast('Error', 'Failed to load company options', 'error');
+            });
+    }
+
+    get selectedBadgeLabel() {
+        return `${this.totalSelected} Selected`;
     }
 
     /**
@@ -163,11 +209,6 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
      * Purpose: validate dates, call getTransactions with date range, reset selection and update pagination.
      */
     handleFilter() {
-        console.log("selectedProduct: ", this.selectedProduct);
-        if (!this.startDate && !this.endDate && !this.selectedProduct) {
-            this.showToast('Error', 'Please fill any filter', 'error');
-            return;
-        }
 
         if (this.startDate && this.endDate && this.startDate > this.endDate) {
             this.showToast('Error', 'Start date cannot be greater than end date.', 'error');
@@ -179,7 +220,9 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         getTransactions({
             startDate: this.startDate,
             endDate: this.endDate,
-            productId: this.selectedProduct
+            productId: this.selectedProduct,
+            giftAidStatus: this.selectedGiftAidStatus,
+            companyId: this.selectedCompany
         })
             .then(result => {
                 console.log('Filtered transactions: ', result);
@@ -213,6 +256,8 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
         this.startDate = null;
         this.endDate = null;
         this.selectedProduct = '';
+        this.selectedGiftAidStatus = '';
+        this.selectedCompany = '';
         this.loadTransactions();
     }
 
@@ -230,6 +275,9 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     resetFilters() {
         this.startDate = null;
         this.endDate = null;
+        this.selectedProduct = '';
+        this.selectedGiftAidStatus = '';
+        this.selectedCompany = '';
         this.clearSelection();
         this.loadTransactions();
     }
@@ -415,5 +463,121 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
                 variant: mVariant
             }),
         )
+    }
+
+    /**
+     * Export filtered transactions to Excel file
+     * Purpose: Create an Excel file with all visible transaction data and download it
+     */
+    handleExportToExcel() {
+        try {
+            if (!this.salesInvoiceTransactionData || this.salesInvoiceTransactionData.length === 0) {
+                this.showToast('Warning', 'No data available to export', 'warning');
+                return;
+            }
+
+            const csvContent = this.generateCSVContent();
+            const timestamp = new Date().toISOString().slice(0, 10);
+            const filename = `Gift_Aid_Sales_Invoice_Transactions_${timestamp}.csv`;
+
+            // IMPORTANT: data URI approach (Locker-safe)
+            const csvData =
+                'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csvContent);
+
+            const link = document.createElement('a');
+            link.href = csvData;
+            link.download = filename;
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            this.showToast(
+                'Success',
+                `Exported ${this.salesInvoiceTransactionData.length} records`,
+                'success'
+            );
+
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showToast('Error', 'Failed to export data', 'error');
+        }
+    }
+
+    /**
+     * Generate CSV content from transaction data
+     * Returns: String - CSV formatted data
+     */
+    generateCSVContent() {
+        // Define headers
+        const headers = [
+            'Invoice Date',
+            'Customer Reference',
+            'Sales Header',
+            'Company',
+            'Account Name',
+            'First Name',
+            'Last Name',
+            'Postal Code',
+            'Product Name',
+            'Nominal Code',
+            'Sales VAT',
+            'Paid Amount',
+            'Analysis 1',
+            'Analysis 2',
+            'Analysis 6'
+        ];
+
+        // Create CSV header row
+        let csv = headers.join(',') + '\r\n'; // Use \r\n for better Excel compatibility
+
+        // Add data rows
+        this.salesInvoiceTransactionData.forEach(record => {
+            const row = [
+                this.formatCSVField(record.invoiceDate),
+                this.formatCSVField(record.customerReference),
+                this.formatCSVField(record.salesInvoiceHeaderName),
+                this.formatCSVField(record.companyName),
+                this.formatCSVField(record.accountName),
+                this.formatCSVField(record.contactFirstName),
+                this.formatCSVField(record.contactLastName),
+                this.formatCSVField(record.contactPostalCode),
+                this.formatCSVField(record.productName),
+                this.formatCSVField(record.nominalCode),
+                this.formatCSVField(record.salesVAT),
+                this.formatCSVField(record.paidAmount),
+                this.formatCSVField(record.analysis1),
+                this.formatCSVField(record.analysis2),
+                this.formatCSVField(record.analysis6)
+            ];
+            csv += row.join(',') + '\r\n';
+        });
+
+        return csv;
+    }
+
+    /**
+     * Format field value for CSV (handle special characters and null values)
+     * Params: value - field value to format
+     * Returns: String - properly escaped CSV field value
+     */
+    formatCSVField(value) {
+        if (value === null || value === undefined || value === '') {
+            return '';
+        }
+
+        // Convert to string
+        let stringValue = String(value);
+
+        // Escape double quotes by doubling them
+        stringValue = stringValue.replace(/"/g, '""');
+
+        // Wrap in quotes if contains comma, newline, or double quote
+        if (stringValue.includes(',') || stringValue.includes('\r') || stringValue.includes('\n') || stringValue.includes('"')) {
+            return `"${stringValue}"`;
+        }
+
+        return stringValue;
     }
 }

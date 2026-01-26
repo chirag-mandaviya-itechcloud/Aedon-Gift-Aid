@@ -23,7 +23,7 @@ public class GiftAidSubmissionController {
      * Notes: Filters transactions by donor eligibility and product eligibility.
      */
 	@AuraEnabled
-	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate, String productId) {
+	public static List<GiftAidSubmissionResultWrapper> getTransactions(Date startDate, Date endDate, String productId, String giftAidStatus, String companyId) {
 
         Map<Id, Contact> accIdToConMap = new Map<Id, Contact>();
 
@@ -48,6 +48,14 @@ public class GiftAidSubmissionController {
 		if (productId != null && productId != '') {
 			q += ' AND Product__r.Id = :productId ';
 		}
+
+        if (giftAidStatus != null && giftAidStatus != '') {
+            q += ' AND Gift_Aid_Submission_Status__c = :giftAidStatus ';
+        }
+
+        if (companyId != null && companyId != '') {
+            q += ' AND Company__c = :companyId ';
+        }
 
 		q += ' ORDER BY Sales_Invoice_Header__r.Invoice_Date__c DESC';
 
@@ -86,6 +94,30 @@ public class GiftAidSubmissionController {
     @AuraEnabled
     public static List<Product2> getProductFilterOptions() {
         return [SELECT Id, Gift_Aid_Eligible_Products__c, Name FROM Product2 WHERE Gift_Aid_Eligible_Products__c = TRUE];
+    }
+
+    @AuraEnabled
+    public static List<Company__c> getCompanyFilterOptions() {
+        return [SELECT Id, Name FROM Company__c ORDER BY Name];
+    }
+
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getGiftAidStatusOptions() {
+        List<Map<String, String>> options = new List<Map<String, String>>();
+        
+        Schema.DescribeFieldResult fieldResult = Sales_Invoice_Transaction__c.Gift_Aid_Submission_Status__c.getDescribe();
+        List<Schema.PicklistEntry> picklistValues = fieldResult.getPicklistValues();
+        
+        for (Schema.PicklistEntry entry : picklistValues) {
+            if (entry.isActive()) {
+                Map<String, String> option = new Map<String, String>();
+                option.put('label', entry.getLabel());
+                option.put('value', entry.getValue());
+                options.add(option);
+            }
+        }
+        
+        return options;
     }
 
     /**
@@ -381,6 +413,7 @@ public class GiftAidSubmissionController {
         @AuraEnabled public String analysis6;
         @AuraEnabled public String analysis7;
         @AuraEnabled public Decimal paidAmount;
+        @AuraEnabled public String giftAidSubmissionStatus;
         @AuraEnabled public String contactFirstName;
         @AuraEnabled public String contactLastName;
         @AuraEnabled public String contactPostalCode;

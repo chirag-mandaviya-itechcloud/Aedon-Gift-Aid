@@ -3,14 +3,14 @@
         <div class="slds-grid slds-wrap slds-gutters slds-p-horizontal_medium">
             <!-- Label Part -->
             <!-- Start Date -->
-            <div class="slds-col slds-size_2-of-12">
+            <div class="slds-col slds-size_1-of-12">
                 <div class="slds-truncate">
                     <legend class="slds-form-element__legend slds-form-element__label">Start Date</legend>
                 </div>
             </div>
 
             <!-- End Date -->
-            <div class="slds-col slds-size_2-of-12">
+            <div class="slds-col slds-size_1-of-12">
                 <div class="slds-truncate">
                     <legend class="slds-form-element__legend slds-form-element__label">End Date</legend>
                 </div>
@@ -23,18 +23,32 @@
                 </div>
             </div>
 
-            <div class="slds-col slds-size_6-of-12"></div>
+            <!-- Gift Aid Status Filter -->
+            <div class="slds-col slds-size_1-of-12">
+                <div class="slds-truncate">
+                    <legend class="slds-form-element__legend slds-form-element__label">Submission Status</legend>
+                </div>
+            </div>
+
+            <!-- Company Filter -->
+            <div class="slds-col slds-size_2-of-12">
+                <div class="slds-truncate">
+                    <legend class="slds-form-element__legend slds-form-element__label">Company</legend>
+                </div>
+            </div>
+
+            <div class="slds-col slds-size_5-of-12"></div>
 
             <!-- Input Part -->
             <!-- Start Date -->
-            <div class="slds-col slds-size_2-of-12">
+            <div class="slds-col slds-size_1-of-12">
                 <lightning-input type="date" label="Start Date" name="startDate" value={startDate}
                     onchange={handleDateChange} variant="label-hidden">
                 </lightning-input>
             </div>
 
             <!-- End Date -->
-            <div class="slds-col slds-size_2-of-12">
+            <div class="slds-col slds-size_1-of-12">
                 <lightning-input type="date" label="End Date" name="endDate" value={endDate} onchange={handleDateChange}
                     variant="label-hidden">
                 </lightning-input>
@@ -48,6 +62,21 @@
                 </lightning-combobox>
             </div>
 
+            <!-- Gift Aid Status Filter -->
+            <div class="slds-col slds-size_1-of-12">
+                <lightning-combobox name="giftAidStatusFilter" label="Submission Status" value={selectedGiftAidStatus}
+                    placeholder="Select Status" options={giftAidStatusOptions} onchange={handleComboboxChange}
+                    variant="label-hidden">
+                </lightning-combobox>
+            </div>
+
+            <!-- Company Filter -->
+            <div class="slds-col slds-size_2-of-12">
+                <lightning-combobox name="companyFilter" label="Company" value={selectedCompany}
+                    placeholder="Select Company" options={companyOptions} onchange={handleComboboxChange}
+                    variant="label-hidden">
+                </lightning-combobox>
+            </div>
 
             <div class="slds-col slds-size_2-of-12 slds-text-align_left">
                 <lightning-button label="Filter" onclick={handleFilter} class="slds-m-left_x-small" variant="brand">
@@ -57,25 +86,25 @@
                 </lightning-button>
             </div>
 
-            <div class="slds-col slds-size_1-of-12"></div>
-            <div class="slds-col slds-size_3-of-12 slds-text-align_right">
-                <lightning-button label="Submit & Close" onclick={handleSubmitAndClose} variant="brand">
+            <div class="slds-col slds-size_3-of-12 slds-text-align_left">
+                <lightning-button class="slds-p-left_small" label="Export to Excel" onclick={handleExportToExcel} variant="brand">
+                </lightning-button>
+                <lightning-button class="slds-p-left_small" label="Submit & Close" onclick={handleSubmitAndClose} variant="brand">
                 </lightning-button>
                 <lightning-button class="slds-p-left_small" label="Submit" onclick={handleSubmit} variant="brand">
                 </lightning-button>
                 <lightning-button class="slds-p-left_small" label="Close" onclick={handleClose} variant="brand">
                 </lightning-button>
             </div>
-            <div class="slds-col slds-size_10-of-12 slds-p-around_small">
+            <div class="slds-col slds-size_8-of-12 slds-p-around_small">
                 <div class="slds-text-heading_large slds-text-title_bold">
                     Sales Invoice Transactions
                 </div>
             </div>
-            <div class="slds-col slds-size_2-of-12 slds-text-align_right slds-p-around_small">
-                <span class="slds-p-horizontal_small"
-                    style="background-color: rgba(219, 119, 50, 0.8); border-radius: 10px">
-                    {totalSelected} Selected
-                </span>
+            
+            <!-- Selected Count Badge -->
+            <div class="slds-col slds-size_4-of-12 slds-text-align_right slds-p-top_x-small">
+                <lightning-badge label={selectedBadgeLabel} class="slds-theme_warning"></lightning-badge>
             </div>
 
         </div>
