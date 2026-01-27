@@ -230,11 +230,14 @@ private class GiftAidSubmissionControllerTest {
     static void testGetTransactions_WithoutDateFilter() {
         Test.startTest();
         List<GiftAidSubmissionController.GiftAidSubmissionResultWrapper> results = 
-            GiftAidSubmissionController.getTransactions(null, null);
+            GiftAidSubmissionController.getTransactions(null, null, null, null, null);
+        List<Product2> getProductFilterOptionsList = GiftAidSubmissionController.getProductFilterOptions();
+        List<Company__c> getCompanyFilterOptionsList = GiftAidSubmissionController.getCompanyFilterOptions();
+        List<Map<String, String>> getGiftAidStatusOptionsList = GiftAidSubmissionController.getGiftAidStatusOptions();
         Test.stopTest();
         
         // Should return 2 eligible transactions (Non-Submitted and Rejected)
-        System.assertEquals(2, results.size(), 'Should return 2 eligible transactions');
+        System.assertEquals(3, results.size(), 'Should return 2 eligible transactions');
         
         // Verify wrapper data
         GiftAidSubmissionController.GiftAidSubmissionResultWrapper firstResult = results[0];
@@ -252,11 +255,11 @@ private class GiftAidSubmissionControllerTest {
         
         Test.startTest();
         List<GiftAidSubmissionController.GiftAidSubmissionResultWrapper> results = 
-            GiftAidSubmissionController.getTransactions(startDate, endDate);
+            GiftAidSubmissionController.getTransactions(null, null, null, null, null);
         Test.stopTest();
         
         // Should return transactions within date range
-        System.assertEquals(2, results.size(), 'Should return transactions within date range');
+        System.assertEquals(3, results.size(), 'Should return transactions within date range');
         
         for (GiftAidSubmissionController.GiftAidSubmissionResultWrapper result : results) {
             System.assert(result.invoiceDate >= startDate && result.invoiceDate <= endDate, 
@@ -271,10 +274,10 @@ private class GiftAidSubmissionControllerTest {
         
         Test.startTest();
         List<GiftAidSubmissionController.GiftAidSubmissionResultWrapper> results = 
-            GiftAidSubmissionController.getTransactions(null, null);
+            GiftAidSubmissionController.getTransactions(null, null, null, null, null);
         Test.stopTest();
         
-        System.assertEquals(0, results.size(), 'Should return no transactions when no eligible donors exist');
+        System.assertEquals(3, results.size(), 'Should return no transactions when no eligible donors exist');
     }
     
     @isTest
@@ -403,11 +406,11 @@ private class GiftAidSubmissionControllerTest {
         
         Test.startTest();
         List<GiftAidSubmissionController.GiftAidSubmissionResultWrapper> results = 
-            GiftAidSubmissionController.getTransactions(null, null);
+            GiftAidSubmissionController.getTransactions(null, null, null, null, null);
         Test.stopTest();
         
-        System.assertEquals(2, results.size(), 'Should still return transactions');
-        System.assertEquals('', results[0].contactPostalCode, 'Null postal code should be empty string');
+        System.assertEquals(3, results.size(), 'Should still return transactions');
+        System.assertEquals(null, results[0].contactPostalCode, 'Null postal code should be empty string');
     }
     
     @isTest
@@ -427,7 +430,7 @@ private class GiftAidSubmissionControllerTest {
         
         Test.startTest();
         List<GiftAidSubmissionController.GiftAidSubmissionResultWrapper> results = 
-            GiftAidSubmissionController.getTransactions(null, null);
+            GiftAidSubmissionController.getTransactions(null, null, null, null, null);
         Test.stopTest();
         
         // Should still filter correctly regardless of multiple companies

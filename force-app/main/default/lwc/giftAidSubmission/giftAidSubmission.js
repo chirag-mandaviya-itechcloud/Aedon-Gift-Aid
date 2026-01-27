@@ -24,6 +24,7 @@ import getTransactions from '@salesforce/apex/GiftAidSubmissionController.getTra
 import getProductFilterOptions from '@salesforce/apex/GiftAidSubmissionController.getProductFilterOptions';
 import getGiftAidStatusOptions from '@salesforce/apex/GiftAidSubmissionController.getGiftAidStatusOptions';
 import getCompanyFilterOptions from '@salesforce/apex/GiftAidSubmissionController.getCompanyFilterOptions';
+import getCurrentUserCompany from '@salesforce/apex/GiftAidSubmissionController.getCurrentUserCompany';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { NavigationMixin } from 'lightning/navigation';
 import saveSubmission from '@salesforce/apex/GiftAidSubmissionController.saveSubmission';
@@ -66,17 +67,71 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
     @track companyOptions = []; 
     @track selectedProduct = '';
     @track selectedGiftAidStatus = '';
+    @track selectedGiftAidStatus = 'Non-Submitted';
     @track selectedCompany = '';
+
+    defaultCompanyId = null;
+    defaultCompanyName = null;
 
     /**
      * Lifecycle hook invoked when component is inserted into DOM.
      * Purpose: initialize component data by loading transactions.
      */
     connectedCallback() {
-        this.loadTransactions();
+        this.loadCurrentUserCompany();
+        this.loadTransactionsWithDefaultFilter();
         this.loadProductOptions();
         this.loadGiftAidStatusOptions();
         this.loadCompanyOptions();
+    }
+
+    /**
+     * Load current logged-in user's company
+     * Purpose: Get default company for filter, treat as null if not found
+     */
+    loadCurrentUserCompany() {
+        this.isLoading = true;
+        getCurrentUserCompany()
+            .then(result => {
+                console.log('Current User Company Result: ', result);
+                
+                // Check if result has companyId
+                if (result && result.companyId) {
+                    this.defaultCompanyId = result.companyId;
+                    this.defaultCompanyName = result.companyName;
+                    this.selectedCompany = result.companyId; // Set default selected company
+                    console.log('Default Company Set: ' + this.defaultCompanyName + ' (' + this.defaultCompanyId + ')');
+                } else {
+                    // No company found - treat as null filter
+                    this.defaultCompanyId = null;
+                    this.defaultCompanyName = null;
+                    this.selectedCompany = ''; // Empty string = no filter
+                    console.log('No default company found for user. Company filter will be null.');
+                }
+                
+                // Now load all other options and data
+                this.loadProductOptions();
+                this.loadGiftAidStatusOptions();
+                this.loadCompanyOptions();
+                this.loadTransactionsWithDefaultFilter();
+            })
+            .catch(error => {
+                console.error('Error fetching current user company: ', error);
+                
+                // On error, treat as no company - null filter
+                this.defaultCompanyId = null;
+                this.defaultCompanyName = null;
+                this.selectedCompany = '';
+                console.log('Error loading company. Company filter will be null.');
+                
+                this.showToast('Info', 'Loading transactions without company filter', 'info');
+                
+                // Continue loading without default company
+                this.loadProductOptions();
+                this.loadGiftAidStatusOptions();
+                this.loadCompanyOptions();
+                this.loadTransactionsWithDefaultFilter();
+            });
     }
 
     loadProductOptions() {
@@ -137,6 +192,44 @@ export default class GiftAidSubmission extends NavigationMixin(LightningElement)
 
     get selectedBadgeLabel() {
         return `${this.totalSelected} Selected`;
+    }
+
+    /**
+     * Load transactions with default "Non-Submitted" filter
+     * Purpose: Initial load with default submission status filter applied
+     */
+    loadTransactionsWithDefaultFilter() {
+        this.isLoading = true;
+        getTransactions({
+            startDate: null,
+            endDate: null,
+            productId: null,
+            giftAidStatus: 'Non-Submitted',
+            companyId: this.selectedCompany
+        })
+            .then(result => {
+                console.log('Transactions fetched: ', result);
+                this.salesInvoiceTransactionData = result.map(record => ({
+                    ...record,
+                    paidAmount: Number(record.paidAmount).toFixed(2)
+                }));
+
+                if (this.salesInvoiceTransactionData.length > 0) {
+                    this.totalPages = Math.ceil(this.salesInvoiceTransactionData.length / this.pageSize);
+                    this.pageNumber = 1;
+                    this.setPageData();
+                } else {
+                    this.totalPages = 1;
+                    this.pageNumber = 1;
+                    this.singlePageSalesInvoiceTransactionData = [];
+                }
+                this.isLoading = false;
+            })
+            .catch(error => {
+                console.error('Error fetching transactions: ', error);
+                this.showToast('Error', 'Failed to load transactions', 'error');
+                this.isLoading = false;
+            });
     }
 
     /**

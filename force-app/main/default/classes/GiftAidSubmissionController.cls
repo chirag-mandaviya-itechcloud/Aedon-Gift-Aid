@@ -121,6 +121,56 @@ public class GiftAidSubmissionController {
     }
 
     /**
+     * getCurrentUserCompany
+     * Purpose: Get the current logged-in user's company
+     * Returns: Map<String, String> - Contains companyId and companyName
+     */
+    @AuraEnabled(cacheable=true)
+    public static Map<String, String> getCurrentUserCompany() {
+        try {
+            // Step 1: Get current user's company ID (string field)
+            User currentUser = [
+                SELECT Id, Name, aednpc__Current_Logged_In_Company__c
+                FROM User 
+                WHERE Id = :UserInfo.getUserId() 
+                WITH SECURITY_ENFORCED
+                LIMIT 1
+            ];
+            
+            Map<String, String> result = new Map<String, String>();
+            
+            // Step 2: Check if user has a company assigned
+            if (String.isNotBlank(currentUser.aednpc__Current_Logged_In_Company__c)) {
+                // Step 3: Query the Company object using the company ID
+                List<aednpc__Company__c> companies = [
+                    SELECT Id, Name 
+                    FROM aednpc__Company__c 
+                    WHERE Id = :currentUser.aednpc__Current_Logged_In_Company__c 
+                    WITH SECURITY_ENFORCED
+                    LIMIT 1
+                ];
+                
+                // Step 4: If company found, return the details
+                if (!companies.isEmpty()) {
+                    result.put('companyId', companies[0].Id);
+                    result.put('companyName', companies[0].Name);
+                    System.debug('Current User Company: ' + companies[0].Name + ' (' + companies[0].Id + ')');
+                } else {
+                    System.debug('No company found with ID: ' + currentUser.aednpc__Current_Logged_In_Company__c);
+                }
+            } else {
+                System.debug('User does not have a Current_Logged_In_Company__c assigned');
+            }
+            
+            return result;
+        } catch (Exception e) {
+            System.debug('Error fetching current user company: ' + e.getMessage());
+            System.debug('Stack Trace: ' + e.getStackTraceString());
+            return new Map<String, String>();
+        }
+    }
+
+    /**
      * saveSubmission
      * Purpose: Create a Gift_Aid_Submission__c record, build HMRC XML payload and send to HMRC endpoint.
      * Params:
