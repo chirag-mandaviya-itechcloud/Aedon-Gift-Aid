@@ -4,7 +4,19 @@
 		<members>GiftAidSubmissionController</members>
 		<members>GiftAidSubmissionPollBatch</members>
 		<members>GiftAidSubmissionPollScheduler</members>
+		<members>HMRCIRmarkGenerator</members>
+		<members>HMRCIntegrationAPI</members>
 		<name>ApexClass</name>
+	</types>
+	<types>
+		<members>GiftAidSubmission__c</members>
+		<members>Gift_Aid_Submission__c</members>
+		<name>CustomObject</name>
+	</types>
+	<types>
+		<members>Gift_Aid_Submission</members>
+		<members>Gift_Aid_Submission__c</members>
+		<name>CustomTab</name>
 	</types>
 	<types>
 		<members>giftAidSubmission</members>
@@ -13,6 +25,11 @@
 	<types>
 		<members>Gift_Aid_Submission</members>
 		<name>RemoteSiteSetting</name>
+	</types>
+	<types>
+		<members>Sales_Invoice_Header__c.Gift_Aid_Submission</members>
+		<members>Sales_Invoice_Transaction__c.Gift_Aid_Submission</members>
+		<name>WebLink</name>
 	</types>
 	<version>65.0</version>
 </Package>
